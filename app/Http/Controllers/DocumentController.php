@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
-use App\Models\TteHistory;
+use App\Models\DocumentSigner;
+use App\Models\User;
 use App\Services\BsreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -11,131 +12,37 @@ use Inertia\Inertia;
 
 class DocumentController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $documents = Document::where('user_id', $request->user()->id)
+        // Pastikan memuat relasi signers.signer agar nama penandatangan terbawa
+        $documents = \App\Models\Document::with(['signers.signer'])
+            ->where('user_id', auth()->id()) 
             ->latest()
             ->get();
 
-        return Inertia::render('Documents/Index', [
+        return \Inertia\Inertia::render('Documents/Index', [
             'documents' => $documents
         ]);
     }
 
-    public function store(Request $request, BsreService $bsreService)
+    public function store(Request $request)
     {
-        set_time_limit(120);
-
         $request->validate([
-            'title'      => 'required|string|max:255',
-            'file'       => 'required|mimes:pdf|max:10240',
-            'passphrase' => 'required|string',
-            'tampilan'   => 'required|in:VISIBLE,INVISIBLE',
-            'page'       => 'required_if:tampilan,VISIBLE|integer',
-            'originX'    => 'required_if:tampilan,VISIBLE|numeric',
-            'originY'    => 'required_if:tampilan,VISIBLE|numeric',
-            'width'      => 'required_if:tampilan,VISIBLE|numeric',
-            'height'     => 'required_if:tampilan,VISIBLE|numeric',
+            'title' => 'required|string|max:255',
+            'file'  => 'required|mimes:pdf|max:10240',
         ]);
 
-        $user = $request->user();
-
-        // 1. Simpan file PDF asli terlebih dahulu (sehingga jika TTE gagal, file asli tetap aman tersimpan)
         $fileObj = $request->file('file');
         $originalPath = $fileObj->store('original_docs', 'public');
 
-        $document = Document::create([
-            'user_id'    => $user->id,
-            'title'      => $request->title,
-            'file_path'  => $originalPath,
-            'status'     => 'pending'
+        Document::create([
+            'user_id'   => auth()->id(),
+            'title'     => $request->title,
+            'file_path' => $originalPath,
+            'status'    => 'pending'
         ]);
 
-        $fileContent = Storage::disk('public')->get($originalPath);
-        $fileBase64 = base64_encode($fileContent);
-
-        // 2. Susun Signature Properties (Sesuai Kriteria Integrasi I)
-        $signatureProperties = [
-            'tampilan' => $request->tampilan,
-            'reason'   => 'Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik yang telah diterbitkan oleh Balai Sertifikasi Elektronik (BSrE), Badan Siber dan Sandi Negara',
-        ];
-
-        if ($request->tampilan === 'VISIBLE') {
-            if (!$user->specimen_path) {
-                return back()->withErrors(['message' => 'Anda belum mengunggah spesimen tanda tangan di menu Profil.']);
-            }
-
-            $specimenContent = Storage::disk('public')->get($user->specimen_path);
-            if (!$specimenContent) {
-                return back()->withErrors(['message' => 'Gagal membaca file spesimen dari server lokal.']);
-            }
-
-            $signatureProperties['imageBase64'] = base64_encode($specimenContent);
-            $signatureProperties['page'] = (int) $request->page;
-            $signatureProperties['originX'] = (float) $request->originX;
-            $signatureProperties['originY'] = (float) $request->originY;
-            $signatureProperties['width'] = (float) $request->width;
-            $signatureProperties['height'] = (float) $request->height;
-        }
-
-        // 3. Panggil API BSrE V2
-        $apiResponse = $bsreService->signDocument(
-            $user->nik, 
-            $request->passphrase, 
-            $fileBase64, 
-            $signatureProperties
-        );
-
-        // 4. Tangani Respon Gagal (Simpan log error, dokumen asli tetap tersimpan)
-        if ($apiResponse->failed()) {
-            $errorBody = $apiResponse->body(); 
-            
-            TteHistory::create([
-                'user_id'          => $user->id,
-                'document_id'      => $document->id,
-                'action'           => 'store_and_sign',
-                'status'           => 'error',
-                'response_message' => 'HTTP ' . $apiResponse->status() . ' - ' . substr($errorBody, 0, 500)
-            ]);
-
-            if (is_array($apiResponse->json())) {
-                $jsonError = $apiResponse->json();
-                $msg = $jsonError['error'] ?? $jsonError['message'] ?? 'Kesalahan dari server BSrE';
-                return back()->withErrors(['message' => 'TTE Gagal: ' . $msg]);
-            }
-
-            return back()->withErrors(['message' => 'TTE Gagal (HTTP ' . $apiResponse->status() . '): Cek histori untuk detail error.']);
-        }
-
-        // 5. Tangani Respon Berhasil (HTTP 200)
-        $response = $apiResponse->json();
-
-        $logResponse = $response;
-        if (isset($logResponse['file'])) {
-            $logResponse['file'] = '[FILE_PDF_HASIL_TTE_DISIMPAN_KE_STORAGE]';
-        }
-
-        TteHistory::create([
-            'user_id'          => $user->id,
-            'document_id'      => $document->id,
-            'action'           => 'store_and_sign',
-            'status'           => 'success',
-            'response_message' => json_encode($logResponse)
-        ]);
-
-        if (isset($response['file'])) {
-            $signedFilePath = 'signed_docs/' . uniqid() . '.pdf';
-            Storage::disk('public')->put($signedFilePath, base64_decode($response['file'][0]));
-            
-            $document->update([
-                'status'           => 'signed',
-                'signed_file_path' => $signedFilePath
-            ]);
-
-            return redirect()->route('documents.index')->with('success', 'Dokumen berhasil diunggah dan di-TTE.');
-        }
-
-        return back()->withErrors(['message' => 'TTE Gagal: Format file dari server tidak valid.']);
+        return back()->with('success', 'Dokumen berhasil diunggah.');
     }
 
     public function destroy(Document $document)
@@ -183,5 +90,204 @@ class DocumentController extends Controller
 
         $path = $document->signed_file_path ?? $document->file_path;
         return Storage::disk('public')->download($path, $document->title . '.pdf');
+    }
+
+    public function show(Document $document)
+    {
+        // Pastikan dokumen beserta relasi signers dan usernya dimuat
+        $document->load(['owner', 'signers.signer', 'signers.requester']);
+
+        // Ambil daftar seluruh pegawai yang AKTIF untuk pilihan dropdown (kecuali diri sendiri)
+        // $activeUsers = User::where('is_active', true)
+        //     ->where('id', '!=', auth()->id())
+        //     ->orderBy('name')
+        //     ->get(['id', 'name', 'nik', 'role']);
+
+        return Inertia::render('Documents/Show', [
+            'document' => $document,
+            // 'activeUsers' => $activeUsers,
+        ]);
+    }
+
+    /**
+     * Memproses Permintaan TTE ke Pegawai Lain
+     */
+    public function requestSign(Request $request, Document $document)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'note'    => 'nullable|string|max:255',
+        ]);
+
+        // CEK 1: Apakah masih ada permintaan yang PENDING? (Pencegahan Sekuensial)
+        $hasPendingRequest = DocumentSigner::where('document_id', $document->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasPendingRequest) {
+            return back()->withErrors(['message' => 'Tidak dapat meneruskan dokumen. Masih ada permintaan TTE yang berstatus Menunggu.']);
+        }
+
+        $targetUserId = $request->user_id;
+
+        // CEK 2: Cek apakah user yang dituju masih aktif
+        $targetUser = User::find($targetUserId);
+        if (!$targetUser || !$targetUser->is_active) {
+            return back()->withErrors(['message' => 'Pegawai yang dipilih tidak aktif atau tidak ditemukan.']);
+        }
+
+        // CEK 3: Cegah duplikasi permintaan ke orang yang sama pada dokumen yang sama
+        $alreadyRequested = DocumentSigner::where('document_id', $document->id)
+            ->where('user_id', $targetUserId)
+            ->exists();
+
+        if ($alreadyRequested) {
+            return back()->withErrors(['message' => 'Pegawai ini sudah ada dalam daftar penandatangan dokumen ini.']);
+        }
+
+        // Simpan permintaan ke database
+        DocumentSigner::create([
+            'document_id'  => $document->id,
+            'user_id'      => $targetUserId,
+            'requester_id' => auth()->id(),
+            'status'       => 'pending',
+        ]);
+
+        if ($document->status === 'pending') {
+            $document->update(['status' => 'forwarded']);
+        }
+
+        return back()->with('success', "Permintaan TTE berhasil diteruskan kepada {$targetUser->name}.");
+    }
+
+    public function incomingRequests()
+    {
+        // Ambil daftar permintaan TTE untuk user yang sedang login
+        $requests = DocumentSigner::with(['document.owner', 'requester'])
+            ->where('user_id', auth()->id())
+            ->where('status', 'pending')
+            ->latest()
+            ->get();
+
+        return Inertia::render('Documents/IncomingRequests', [
+            'incomingRequests' => $requests
+        ]);
+    }
+
+    /**
+     * API Pencarian Pegawai Aktif
+     */
+    public function searchUsers(Request $request)
+    {
+        $query = $request->get('q');
+        
+        $users = User::where('is_active', true)
+            ->where('id', '!=', auth()->id())
+            ->when($query, function ($q) use ($query) {
+                $q->where(function ($sub) use ($query) {
+                    $sub->where('name', 'like', "%{$query}%")
+                        ->orWhere('nik', 'like', "%{$query}%");
+                });
+            })
+            ->limit(10) // Batasi 10 hasil agar sangat ringan
+            ->get(['id', 'name', 'nik', 'role']);
+
+        return response()->json($users);
+    }
+
+    /**
+     * Menolak Permintaan TTE (Dilengkapi Alasan)
+     */
+    public function rejectSign(Request $request, Document $document)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500' // Alasan wajib diisi
+        ]);
+
+        $signer = \App\Models\DocumentSigner::where('document_id', $document->id)
+            ->where('user_id', auth()->id())
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$signer) {
+            return back()->withErrors(['message' => 'Permintaan tidak ditemukan atau sudah diproses.']);
+        }
+
+        // Simpan alasan penolakan
+        $signer->update([
+            'status' => 'rejected',
+            'reject_reason' => $request->reason
+        ]);
+        
+        $document->update(['status' => 'rejected']); 
+
+        return back()->with('success', 'Dokumen berhasil dikembalikan dengan catatan penolakan.');
+    }
+
+    /**
+     * Revisi Dokumen (Upload PDF Baru)
+     */
+    public function revise(Request $request, Document $document)
+    {
+        // Hanya pemilik dokumen yang boleh melakukan revisi
+        if ($document->user_id !== auth()->id()) {
+            abort(403, 'Anda tidak memiliki akses untuk merevisi dokumen ini.');
+        }
+
+        $request->validate([
+            'file' => 'required|mimes:pdf|max:10240',
+        ]);
+
+        // Hapus file lama jika diperlukan (opsional)
+        Storage::disk('public')->delete($document->file_path);
+        if ($document->signed_file_path) Storage::disk('public')->delete($document->signed_file_path);
+
+        // Upload file perbaikan
+        $newPath = $request->file('file')->store('original_docs', 'public');
+
+        // Reset Dokumen ke kondisi awal
+        $document->update([
+            'file_path' => $newPath,
+            'signed_file_path' => null, // TTE yang lama hangus
+            'status' => 'pending'
+        ]);
+
+        // Hapus semua riwayat penandatanganan sebelumnya agar diulang dari awal
+        \App\Models\DocumentSigner::where('document_id', $document->id)->delete();
+
+        return back()->with('success', 'Dokumen perbaikan berhasil diunggah. Silakan ajukan ulang permintaan TTE.');
+    }
+
+    /**
+     * Membatalkan Permintaan TTE (Mitigasi Salah Kirim)
+     */
+    public function cancelRequest(Document $document, \App\Models\DocumentSigner $signer)
+    {
+        // 1. Pastikan signer ini benar milik dokumen yang dimaksud
+        if ($signer->document_id !== $document->id) {
+            abort(404);
+        }
+
+        // 2. Pastikan statusnya masih pending (belum di-TTE)
+        if ($signer->status !== 'pending') {
+            return back()->withErrors(['message' => 'Gagal dibatalkan: Dokumen sudah diproses oleh pejabat yang bersangkutan.']);
+        }
+
+        // 3. Pastikan yang membatalkan adalah orang yang meminta ATAU pemilik dokumen
+        if ($signer->requester_id !== auth()->id() && $document->user_id !== auth()->id()) {
+            abort(403, 'Anda tidak berhak membatalkan permintaan ini.');
+        }
+
+        // 4. Hapus data permintaan
+        $signer->delete();
+
+        // 5. Jika setelah dihapus tidak ada lagi riwayat permintaan pada dokumen ini, 
+        // kembalikan status dokumen dari 'forwarded' menjadi 'pending'
+        $remainingSigners = \App\Models\DocumentSigner::where('document_id', $document->id)->count();
+        if ($remainingSigners === 0 && $document->status === 'forwarded') {
+            $document->update(['status' => 'pending']);
+        }
+
+        return back()->with('success', 'Permintaan TTE berhasil ditarik kembali/dibatalkan.');
     }
 }

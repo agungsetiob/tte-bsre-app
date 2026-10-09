@@ -61,6 +61,17 @@ const showingNavigationDropdown = ref(false);
                                     </svg>
                                     Histori
                                 </NavLink>
+                                <NavLink
+                                    v-if="route().has('admin.users.index')"
+                                    :href="route('admin.users.index')"
+                                    :active="route().current('admin.users.*')"
+                                    class="flex items-center gap-2 px-3 py-2 rounded-md transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v2a3 3 0 01-3 3H9a3 3 0 01-3-3v-2m12 0h-2.586a1 1 0 00-.707.293l-2.828 2.828a1 1 0 01-.707.293H7a1 1 0 01-1-1v-2a1 1 0 011-1h2.586a1 1 0 00.707-.293       l2.828-2.828a1 1 0 01.707-.293H17a1 1 0 011 1v2a1 1 0 01-1 1z" />
+                                    </svg>
+                                    Pengguna
+                                </NavLink>
                             </div>
                         </div>
 
@@ -135,6 +146,9 @@ const showingNavigationDropdown = ref(false);
                         </ResponsiveNavLink>
                         <ResponsiveNavLink v-if="route().has('histories.index')" :href="route('histories.index')" :active="route().current('histories.*')">
                             Histori
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="route().has('admin.users.index')" :href="route('admin.users.index')" :active="route().current('admin.users.*')">
+                            Pengguna
                         </ResponsiveNavLink>
                     </div>
 

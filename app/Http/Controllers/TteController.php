@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\DocumentSigner;
 use App\Models\TteHistory;
 use App\Services\BsreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
 
 class TteController extends Controller
 {
@@ -33,6 +33,7 @@ class TteController extends Controller
         $user = $request->user();
 
         // 1. Baca File PDF dari Storage Public
+        $targetPath = $document->signed_file_path ?? $document->file_path;
         $fileContent = Storage::disk('public')->get($document->file_path);
 
         if (!$fileContent) {
@@ -112,18 +113,28 @@ class TteController extends Controller
             'response_message' => json_encode($logResponse)
         ]);
 
-        if (isset($response['file'])) {
+        if (isset($apiResponse->json()['file'])) {
+            $response = $apiResponse->json();
             $signedFilePath = 'signed_docs/' . uniqid() . '.pdf';
             
-            // Simpan file hasil TTE ke storage
             Storage::disk('public')->put($signedFilePath, base64_decode($response['file'][0]));
             
+            // Update dokumen utama
             $document->update([
                 'status'           => 'signed',
                 'signed_file_path' => $signedFilePath
             ]);
 
-            return redirect()->route('documents.index')->with('success', 'Dokumen berhasil di-TTE.');
+            // UPDATE STATUS PERMINTAAN (MULTI-SIGN)
+            DocumentSigner::where('document_id', $document->id)
+                ->where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'signed',
+                    'signed_at' => now(),
+                ]);
+
+            return back()->with('success', 'Dokumen berhasil ditandatangani (TTE).');
         }
 
         return back()->withErrors(['message' => 'TTE Gagal: Format file dari server tidak valid.']);

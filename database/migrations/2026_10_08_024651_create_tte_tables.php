@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('file_path'); // Path dokumen asli (PDF)
             $table->string('signed_file_path')->nullable(); // Path setelah di-TTE
-            $table->enum('status', ['pending', 'signed', 'failed'])->default('pending');
+            $table->enum('status', ['pending', 'signed', 'forwarded', 'rejected'])->default('pending');
             $table->timestamps();
         });
 

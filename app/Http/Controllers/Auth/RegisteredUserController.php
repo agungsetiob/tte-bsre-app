@@ -33,22 +33,30 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'nik' => 'required|string|size:16|unique:' . User::class,
-            'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'nik' => 'required|string|max:16|unique:'.User::class, 
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
+        $isFirstUser = \App\Models\User::count() === 0;
+
+        $user = \App\Models\User::create([
             'name' => $request->name,
-            'nik' => $request->nik,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'nik' => $request->nik,
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'role' => $isFirstUser ? 'admin' : 'user',
+            'is_active' => $isFirstUser ? true : false,
         ]);
 
-        event(new Registered($user));
+        event(new \Illuminate\Auth\Events\Registered($user));
 
-        Auth::login($user);
+        \Illuminate\Support\Facades\Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        if ($user->is_active) {
+            return redirect(route('dashboard', absolute: false));
+        }
+
+        return redirect()->route('approval.notice');
     }
 }
