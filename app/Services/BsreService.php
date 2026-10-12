@@ -27,7 +27,7 @@ class BsreService
     }
 
     // Pengecekan status pengguna menggunakan NIK
-    public function checkStatus($nik)
+    public function checkUserStatus($nik)
     {
         return $this->getClient()->post('/api/v2/user/check/status', [
             'nik' => $nik

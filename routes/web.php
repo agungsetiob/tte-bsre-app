@@ -53,7 +53,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::post('/documents/{document}/reject-sign', [DocumentController::class, 'rejectSign'])->name('documents.rejectSign');
     Route::post('/documents/{document}/revise', [DocumentController::class, 'revise'])->name('documents.revise');
     Route::delete('/documents/{document}/signers/{signer}', [DocumentController::class, 'cancelRequest'])->name('documents.cancelRequest');
-    
+
     // Proses request TTE
     Route::post('/documents/{document}/request-sign', [DocumentController::class, 'requestSign'])->name('documents.requestSign');
     Route::post('/documents/{document}/reject-sign', [DocumentController::class, 'rejectSign'])->name('documents.rejectSign');
@@ -71,6 +71,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
 Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::get('/admin/users', [AdminController::class, 'index'])->name('admin.users.index');
     Route::patch('/admin/users/{user}/toggle', [AdminController::class, 'toggleActive'])->name('admin.users.toggle');
+    Route::post('/users/{user}/check-bsre', [AdminController::class, 'checkBsreStatus'])->name('users.check_bsre');
 });
 
 Route::get('/dashboard', function () {
@@ -83,4 +84,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

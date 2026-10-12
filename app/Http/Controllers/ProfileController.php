@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\BsreService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,11 +18,34 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): Response
+    public function edit(Request $request, BsreService $bsreService)
     {
+        $user = $request->user();
+        
+        $bsreStatus = 'TIDAK_DICEK';
+        
+        if ($user->nik) {
+            try {
+                $response = $bsreService->checkUserStatus($user->nik);
+                
+                // Pastikan $response adalah objek yang valid sebelum memanggil method-nya
+                if ($response && $response->successful()) {
+                    // json('status') akan aman meskipun response tidak memiliki key tersebut
+                    $bsreStatus = $response->json('status') ?? 'UNKNOWN';
+                } else {
+                    // Akan masuk ke sini jika terblokir (HTTP 403), HTTP 500, atau Bad Request
+                    $bsreStatus = 'ERROR_KONEKSI';
+                }
+            } catch (\Exception $e) {
+                // Akan masuk ke sini jika server BSrE down, timeout, atau koneksi terputus total
+                $bsreStatus = 'ERROR_KONEKSI';
+            }
+        }
+
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
+            'bsreStatus' => $bsreStatus,
         ]);
     }
 
