@@ -28,6 +28,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('approval.notice');
 });
 
+// Halaman UI Verifikasi
+Route::get('/v/{code}', [PublicVerificationController::class, 'showVerifyPage'])->name('verify.document');
+
+// Endpoint API (Dipanggil dari onMounted Vue untuk loading indikator)
+Route::post('/v/{code}/check', [PublicVerificationController::class, 'checkQrAsync'])->name('verify.check_async');
+
+// Download File
+Route::get('/v/{code}/download', [PublicVerificationController::class, 'downloadDocument'])->name('verify.download');
+
 Route::get('/verify-document', [PublicVerificationController::class, 'index'])->name('verification.public');
 Route::post('/verify-document', [PublicVerificationController::class, 'check'])->name('verification.check');
 
@@ -52,6 +61,7 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     // Proses TTE
     Route::get('/documents/{document}/sign', [TteController::class, 'showSignPage'])->name('documents.showSign');
     Route::post('/documents/{document}/sign', [TteController::class, 'sign'])->name('documents.sign');
+    Route::post('/documents/batch-sign', [TteController::class, 'batchSign'])->name('documents.batch_sign');
 
     // Histori TTE
     Route::get('/histories', [TteHistoryController::class, 'index'])->name('histories.index');

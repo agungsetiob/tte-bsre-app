@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Services\BsreService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Inertia\Inertia;
 use setasign\Fpdi\Fpdi;
 
@@ -35,10 +37,16 @@ class DocumentController extends Controller
 
         $fileObj = $request->file('file');
         
+        // 1. Buat Kode Verifikasi Unik & URL-nya
+        $verificationCode = Str::random(16); // Contoh: aB3dE5fG...
+        $verifyUrl = route('verify.document', $verificationCode);
+
+        // 2. Generate Gambar QR Code (Format PNG)
+        $qrTempPath = storage_path('app/public/temp_qr_' . uniqid() . '.png');
+        QrCode::format('png')->size(200)->generate($verifyUrl, $qrTempPath);
+
         $pdf = new Fpdi();
         $pageCount = $pdf->setSourceFile($fileObj->getRealPath());
-
-        // MATIKAN AUTO PAGE BREAK AGAR TIDAK MEMBUAT HALAMAN BARU
         $pdf->SetAutoPageBreak(false);
 
         $disclaimerText = "Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik yang diterbitkan oleh BSrE, BSSN.";
@@ -47,34 +55,37 @@ class DocumentController extends Controller
             $templateId = $pdf->importPage($pageNo);
             $size = $pdf->getTemplateSize($templateId);
             
-            // Tambahkan halaman dengan ukuran & orientasi asli
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($templateId);
             
-            // Atur Font & Warna (Abu-abu)
+            // Cetak QR Code di pojok KIRI BAWAH
+            // Parameter: Image(file, koordinat_X, koordinat_Y, lebar, tinggi)
+            $pdf->Image($qrTempPath, 5, $size['height'] - 20, 15, 15, 'PNG');
+            
+            // Cetak Teks Disclaimer di tengah bawah
             $pdf->SetFont('Arial', 'I', 8);
             $pdf->SetTextColor(120, 120, 120);
-            
-            // Posisikan 10mm dari batas paling bawah halaman
             $pdf->SetXY(0, $size['height'] - 10);
             $pdf->Cell($size['width'], 5, $disclaimerText, 0, 0, 'C'); 
         }
 
-        // Simpan file yang sudah distempel ke storage
-        $stampedContent = $pdf->Output('S'); // Output sebagai string
+        // Hapus file QR sementara agar server tidak penuh
+        unlink($qrTempPath);
+
+        $stampedContent = $pdf->Output('S');
         $stampedFilePath = 'original_docs/' . uniqid('doc_') . '.pdf';
-        
         Storage::disk('public')->put($stampedFilePath, $stampedContent);
 
-        // Simpan ke Database
+        // Simpan ke Database, sertakan verification_code
         Document::create([
-            'user_id'   => auth()->id(),
-            'title'     => $request->title,
-            'file_path' => $stampedFilePath,
-            'status'    => 'pending'
+            'user_id'           => auth()->id(),
+            'verification_code' => $verificationCode,
+            'title'             => $request->title,
+            'file_path'         => $stampedFilePath,
+            'status'            => 'pending'
         ]);
 
-        return back()->with('success', 'Dokumen berhasil diunggah dan dibubuhi footer peringatan BSrE.');
+        return back()->with('success', 'Dokumen berhasil diunggah, dibubuhi QR Code & footer BSrE.');
     }
 
     public function destroy(Document $document)

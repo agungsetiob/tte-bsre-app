@@ -109,7 +109,28 @@ useEventListener(window, 'mousemove', (e: MouseEvent) => {
 });
 useEventListener(window, 'mouseup', () => { isDragging.value = false; });
 
-const close = () => emit('update:show', false);
+const resetForm = () => {
+    signForm.reset();
+    signForm.clearErrors();
+
+    Object.assign(signForm, {
+        tampilan: 'INVISIBLE',
+        page: 1,
+        originX: 0,
+        originY: 0,
+        width: 150,
+        height: 60,
+    });
+
+    specX.value = 50;
+    specY.value = 50;
+    isDragging.value = false;
+};
+
+const close = () => {
+    resetForm();
+    emit('update:show', false);
+};
 </script>
 
 <template>

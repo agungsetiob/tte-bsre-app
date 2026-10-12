@@ -5,7 +5,7 @@ import { ref, computed } from 'vue';
 import TteProcessModal from '@/Components/TteProcessModal.vue';
 import { ArrowLeft, Inbox, PenTool, CheckCircle2, FileText } from 'lucide-vue-next';
 
-defineProps<{
+const props = defineProps<{
     incomingRequests: Array<any>;
     auth: { user: { name: string; specimen_path: string | null } };
 }>();
@@ -48,6 +48,39 @@ const submitReject = () => {
         onSuccess: () => { showRejectModal.value = false; }
     });
 };
+
+const selectedDocs = ref<number[]>([]);
+const showBatchModal = ref(false);
+
+const batchForm = useForm({
+    document_ids: [] as number[],
+    passphrase: '',
+});
+
+// Fitur Select All
+const toggleSelectAll = (e: Event) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    if (checked) {
+        // Asumsi variabel requests menampung data dokumen dari props
+        selectedDocs.value = props.incomingRequests.map((req: any) => req.document.id);
+    } else {
+        selectedDocs.value = [];
+    }
+};
+
+const submitBatchSign = () => {
+    batchForm.document_ids = selectedDocs.value;
+    batchForm.post(route('documents.batch_sign'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (!page.props.errors || Object.keys(page.props.errors).length === 0) {
+                showBatchModal.value = false;
+                selectedDocs.value = []; // Reset pilihan setelah sukses
+                batchForm.reset();
+            }
+        }
+    });
+};
 </script>
 
 <template>
@@ -75,12 +108,27 @@ const submitReject = () => {
                 <CheckCircle2 class="w-5 h-5" />
                 <span class="font-medium">{{ flashSuccess }}</span>
             </div>
+            <div v-if="selectedDocs.length > 0"
+                class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between shadow-sm">
+                <span class="text-blue-900 font-semibold text-sm">
+                    {{ selectedDocs.length }} dokumen terpilih
+                </span>
+                <button @click="showBatchModal = true"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition-colors">
+                    TTE Massal Sekarang
+                </button>
+            </div>
 
             <!-- Tabel Permintaan -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-2xl border border-slate-200">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
+                            <th class="px-6 py-3 text-left w-12">
+                                <!-- CHECKBOX SELECT ALL -->
+                                <input type="checkbox" @change="toggleSelectAll"
+                                    class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                            </th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Dokumen</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Diminta Oleh</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Waktu Permintaan
@@ -90,6 +138,11 @@ const submitReject = () => {
                     </thead>
                     <tbody class="divide-y divide-slate-200 bg-white">
                         <tr v-for="req in incomingRequests" :key="req.id" class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <!-- CHECKBOX PER BARIS -->
+                                <input type="checkbox" :value="req.document.id" v-model="selectedDocs"
+                                    class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                            </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
@@ -160,6 +213,46 @@ const submitReject = () => {
                         <button type="submit" :disabled="rejectForm.processing"
                             class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700">Kirim
                             Penolakan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL BATCH SIGN (Taruh di paling bawah template) -->
+        <div v-if="showBatchModal"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+                <h3 class="text-lg font-bold text-slate-900 mb-2">TTE Massal (Invisible)</h3>
+                <p class="text-sm text-slate-500 mb-4">Anda akan menandatangani <strong>{{ selectedDocs.length }}
+                        dokumen</strong> sekaligus. Mode yang digunakan adalah Invisible (Tanpa visual spesimen pada
+                    PDF).</p>
+                <div v-if="errorMessage"
+                    class="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200">
+                    {{ errorMessage }}
+                </div>
+
+                <!-- ALERT VALIDASI FORM -->
+                <div v-if="Object.keys(batchForm.errors).length > 0"
+                    class="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200">
+                    <ul class="list-disc pl-4">
+                        <li v-for="(error, key) in batchForm.errors" :key="key">{{ error }}</li>
+                    </ul>
+                </div>
+
+                <form @submit.prevent="submitBatchSign" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium">Passphrase BSrE</label>
+                        <input type="password" v-model="batchForm.passphrase" required
+                            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm"
+                            placeholder="Masukkan Passphrase" />
+                    </div>
+                    <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                        <button type="button" @click="showBatchModal = false"
+                            class="px-4 py-2 bg-slate-100 rounded-lg text-sm font-medium">Batal</button>
+                        <button type="submit" :disabled="batchForm.processing"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
+                            {{ batchForm.processing ? 'Memproses...' : 'Proses Semua' }}
+                        </button>
                     </div>
                 </form>
             </div>
