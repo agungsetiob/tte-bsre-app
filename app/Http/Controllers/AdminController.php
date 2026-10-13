@@ -9,14 +9,63 @@ use App\Services\BsreService; // Tambahkan ini
 
 class AdminController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Mengambil semua user, diurutkan dari yang terbaru mendaftar
-        $users = User::orderBy('created_at', 'desc')->get();
+        $query = User::query();
+
+        // 1. Filter Pencarian (Nama, Email, NIK)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('nik', 'like', "%{$search}%");
+            });
+        }
+
+        // 2. Filter Status Akun
+        if ($request->filled('is_active')) {
+            $query->where('is_active', $request->is_active === '1');
+        }
+
+        // 3. Filter Status TTE BSrE
+        if ($request->filled('bsre_status')) {
+            $query->where('bsre_status', $request->bsre_status);
+        }
+
+        // Gunakan paginate(10), dan sertakan query string agar filter tidak hilang saat pindah halaman
+        $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         return Inertia::render('Admin/Users/Index', [
-            'users' => $users
+            'users' => $users,
+            'filters' => $request->only(['search', 'is_active', 'bsre_status'])
         ]);
+    }
+
+    public function checkBsreStatus(User $user, BsreService $bsreService)
+    {
+        if (empty($user->nik)) {
+            $user->update(['bsre_status' => 'NOT_REGISTERED']);
+            return response()->json(['status' => 'NOT_REGISTERED']);
+        }
+
+        try {
+            $response = $bsreService->checkUserStatus($user->nik);
+            
+            if ($response && $response->successful()) {
+                $status = $response->json('status') ?? 'UNKNOWN';
+                
+                // SIMPAN STATUS KE DATABASE AGAR BISA DI-FILTER!
+                $user->update(['bsre_status' => $status]);
+                
+                return response()->json(['status' => $status]);
+            }
+
+            return response()->json(['status' => 'ERROR_KONEKSI'], 500);
+            
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'ERROR_KONEKSI'], 500);
+        }
     }
 
     public function toggleActive(User $user)
@@ -33,28 +82,5 @@ class AdminController extends Controller
         $status = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
         
         return back()->with('success', "Akun {$user->name} berhasil {$status}.");
-    }
-
-    // FUNGSI BARU UNTUK CEK STATUS BSRE
-    public function checkBsreStatus(User $user, BsreService $bsreService)
-    {
-        if (empty($user->nik)) {
-            return response()->json(['status' => 'NOT_REGISTERED']);
-        }
-
-        try {
-            $response = $bsreService->checkUserStatus($user->nik);
-            
-            // Pastikan $response tidak null dan request berhasil (HTTP 200)
-            if ($response && $response->successful()) {
-                return response()->json(['status' => $response->json('status') ?? 'UNKNOWN']);
-            }
-
-            return response()->json(['status' => 'ERROR_KONEKSI'], 500);
-            
-        } catch (\Exception $e) {
-            // Tangkap error jika server BSrE down atau timeout
-            return response()->json(['status' => 'ERROR_KONEKSI'], 500);
-        }
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicVerificationController;
@@ -31,7 +32,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // Halaman UI Verifikasi
 Route::get('/v/{code}', [PublicVerificationController::class, 'showVerifyPage'])->name('verify.document');
 
-// Endpoint API (Dipanggil dari onMounted Vue untuk loading indikator)
+// Endpoint API
 Route::post('/v/{code}/check', [PublicVerificationController::class, 'checkQrAsync'])->name('verify.check_async');
 
 // Download File
@@ -74,9 +75,9 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::post('/users/{user}/check-bsre', [AdminController::class, 'checkBsreStatus'])->name('users.check_bsre');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

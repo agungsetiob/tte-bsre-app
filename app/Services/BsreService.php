@@ -31,7 +31,7 @@ class BsreService
     {
         return $this->getClient()->post('/api/v2/user/check/status', [
             'nik' => $nik
-        ])->json();
+        ]);
     }
 
     // Pendaftaran pengguna yang belum memiliki akun BSrE
@@ -40,21 +40,19 @@ class BsreService
         return $this->getClient()->post('/api/v2/user/registration', [
             'nama' => $nama,
             'email' => $email,
-            'nik' => $nik // Asumsi NIK disisipkan sesuai kebutuhan instansi, meski di dokumen hanya tertulis nama dan email[cite: 37]
+            'nik' => $nik
         ])->json();
     }
 
-    // Membubuhkan tanda tangan elektronik pada dokumen[cite: 21]
-    // Membubuhkan tanda tangan elektronik pada dokumen[cite: 21]
+    // Membubuhkan tanda tangan elektronik pada dokumen
     public function signDocument($nik, $passphrase, $fileBase64, $signatureProperties)
     {
-        // File yang diterima di parameter ini harus berupa tipe base64 string di dalam array[cite: 26]
         return $this->getClient()->post('/api/v2/sign/pdf', [
             'nik' => $nik,
             'passphrase' => $passphrase,
             'signatureProperties' => [$signatureProperties],
             'file' => [$fileBase64]
-        ]); // <-- Hapus ->json() di sini
+        ]);
     }
 
     public function verifyDocument($fileBase64, $password = null)

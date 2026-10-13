@@ -12,19 +12,31 @@ use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Inertia\Inertia;
 use setasign\Fpdi\Fpdi;
+use Carbon\Carbon;
 
 class DocumentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Pastikan memuat relasi signers.signer agar nama penandatangan terbawa
-        $documents = Document::with(['signers.signer'])
-            ->where('user_id', auth()->id()) 
-            ->latest()
-            ->get();
+        $query = Document::with('signers.signer')
+            ->where('user_id', $request->user()->id);
+
+        // 1. Filter Pencarian (Berdasarkan Judul)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('title', 'like', "%{$search}%");
+        }
+
+        // 2. Filter Status Dokumen
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $documents = $query->latest()->paginate(10)->withQueryString();
 
         return Inertia::render('Documents/Index', [
-            'documents' => $documents
+            'documents' => $documents,
+            'filters'   => $request->only(['search', 'status']),
         ]);
     }
 
@@ -38,10 +50,10 @@ class DocumentController extends Controller
         $fileObj = $request->file('file');
         
         // 1. Buat Kode Verifikasi Unik & URL-nya
-        $verificationCode = Str::random(16); // Contoh: aB3dE5fG...
+        $verificationCode = Str::random(16);
         $verifyUrl = route('verify.document', $verificationCode);
 
-        // 2. Generate Gambar QR Code (Format PNG)
+        // 2. Generate Gambar QR Code
         $qrTempPath = storage_path('app/public/temp_qr_' . uniqid() . '.png');
         QrCode::format('png')->size(200)->generate($verifyUrl, $qrTempPath);
 
@@ -140,15 +152,8 @@ class DocumentController extends Controller
         // Pastikan dokumen beserta relasi signers dan usernya dimuat
         $document->load(['owner', 'signers.signer', 'signers.requester']);
 
-        // Ambil daftar seluruh pegawai yang AKTIF untuk pilihan dropdown (kecuali diri sendiri)
-        // $activeUsers = User::where('is_active', true)
-        //     ->where('id', '!=', auth()->id())
-        //     ->orderBy('name')
-        //     ->get(['id', 'name', 'nik', 'role']);
-
         return Inertia::render('Documents/Show', [
             'document' => $document,
-            // 'activeUsers' => $activeUsers,
         ]);
     }
 
@@ -203,17 +208,49 @@ class DocumentController extends Controller
         return back()->with('success', "Permintaan TTE berhasil diteruskan kepada {$targetUser->name}.");
     }
 
-    public function incomingRequests()
+    public function incomingRequests(Request $request)
     {
-        // Ambil daftar permintaan TTE untuk user yang sedang login
-        $requests = DocumentSigner::with(['document.owner', 'requester'])
-            ->where('user_id', auth()->id())
-            ->where('status', 'pending')
-            ->latest()
-            ->get();
+        // Gunakan where() dengan closure untuk membungkus pencarian relasi agar user_id tidak bocor
+        $query = DocumentSigner::with(['document.owner', 'requester'])
+            ->where('user_id', auth()->id());
 
-        return Inertia::render('Documents/IncomingRequests', [
-            'incomingRequests' => $requests
+        // 1. Pencarian (Nama Dokumen atau Nama Peminta)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('document', function ($docQ) use ($search) {
+                    $docQ->where('title', 'like', "%{$search}%");
+                })->orWhereHas('requester', function ($reqQ) use ($search) {
+                    $reqQ->where('name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        // 2. Filter Status (Default: tampilkan 'pending', kecuali user memilih filter lain)
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        } else {
+            // Jika filter kosong/pertama kali load, default tampilkan yang pending saja seperti "Inbox"
+            $query->where('status', 'pending');
+        }
+
+        // 3. Filter Waktu Permintaan
+        if ($request->filled('date')) {
+            if ($request->date === 'today') {
+                $query->whereDate('created_at', Carbon::today());
+            } elseif ($request->date === 'week') {
+                $query->where('created_at', '>=', Carbon::now()->startOfWeek());
+            } elseif ($request->date === 'month') {
+                $query->where('created_at', '>=', Carbon::now()->startOfMonth());
+            }
+        }
+
+        // Paginasi
+        $requests = $query->latest()->paginate(10)->withQueryString();
+
+        return inertia('Documents/IncomingRequests', [
+            'incomingRequests' => $requests,
+            'filters' => $request->only(['search', 'status', 'date'])
         ]);
     }
 
@@ -232,7 +269,7 @@ class DocumentController extends Controller
                         ->orWhere('nik', 'like', "%{$query}%");
                 });
             })
-            ->limit(10) // Batasi 10 hasil agar sangat ringan
+            ->limit(10)
             ->get(['id', 'name', 'nik', 'role']);
 
         return response()->json($users);
@@ -244,7 +281,7 @@ class DocumentController extends Controller
     public function rejectSign(Request $request, Document $document)
     {
         $request->validate([
-            'reason' => 'required|string|max:500' // Alasan wajib diisi
+            'reason' => 'required|string|max:500'
         ]);
 
         $signer = DocumentSigner::where('document_id', $document->id)
@@ -268,7 +305,7 @@ class DocumentController extends Controller
     }
 
     /**
-     * Revisi Dokumen (Upload PDF Baru)
+     * Revisi Dokumen
      */
     public function revise(Request $request, Document $document)
     {
@@ -335,7 +372,7 @@ class DocumentController extends Controller
     }
 
     /**
-     * Membatalkan Permintaan TTE (Mitigasi Salah Kirim)
+     * Membatalkan Permintaan TTE
      */
     public function cancelRequest(Document $document, DocumentSigner $signer)
     {

@@ -44,14 +44,14 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'nik' => $request->nik,
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'password' => Hash::make($request->password),
             'role' => $isFirstUser ? 'admin' : 'user',
             'is_active' => $isFirstUser ? true : false,
         ]);
 
-        event(new \Illuminate\Auth\Events\Registered($user));
+        event(new Registered($user));
 
-        \Illuminate\Support\Facades\Auth::login($user);
+        Auth::login($user);
 
         if ($user->is_active) {
             return redirect(route('dashboard', absolute: false));
