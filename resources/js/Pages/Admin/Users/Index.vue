@@ -73,8 +73,8 @@ const checkStatus = async (userId: number) => {
     try {
         const response = await axios.post(route('users.check_bsre', userId));
         userStatuses.value[userId] = response.data.status;
-    } catch (error) {
-        userStatuses.value[userId] = 'ERROR_KONEKSI';
+    } catch (error: any) {
+        userStatuses.value[userId] = error.response?.data?.status || 'ERROR_KONEKSI';
     } finally {
         isChecking.value[userId] = false;
     }

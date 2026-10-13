@@ -28,17 +28,26 @@ class ProfileController extends Controller
             try {
                 $response = $bsreService->checkUserStatus($user->nik);
                 
-                // Pastikan $response adalah objek yang valid sebelum memanggil method-nya
+                // 1. Jika Berhasil
                 if ($response && $response->successful()) {
-                    // json('status') akan aman meskipun response tidak memiliki key tersebut
                     $bsreStatus = $response->json('status') ?? 'UNKNOWN';
-                } else {
-                    // Akan masuk ke sini jika terblokir (HTTP 403), HTTP 500, atau Bad Request
+                } 
+                // 2. Jika Gagal dari API BSrE (Tangkap pesan aslinya)
+                elseif ($response && $response->failed()) {
+                    if (is_array($response->json())) {
+                        $jsonError = $response->json();
+                        $bsreStatus = $jsonError['error'] ?? $jsonError['message'] ?? 'Kesalahan server BSrE';
+                    } else {
+                        $bsreStatus = 'HTTP ' . $response->status() . ' Error';
+                    }
+                } 
+                // 3. Fallback lainnya
+                else {
                     $bsreStatus = 'ERROR_KONEKSI';
                 }
             } catch (\Exception $e) {
-                // Akan masuk ke sini jika server BSrE down, timeout, atau koneksi terputus total
-                $bsreStatus = 'ERROR_KONEKSI';
+                // Server BSrE down / Timeout / IP Diblokir
+                $bsreStatus = 'TIDAK_DAPAT_TERHUBUNG';
             }
         }
 

@@ -52,19 +52,35 @@ class AdminController extends Controller
         try {
             $response = $bsreService->checkUserStatus($user->nik);
             
+            // 1. Tangani Respon Berhasil (HTTP 200)
             if ($response && $response->successful()) {
                 $status = $response->json('status') ?? 'UNKNOWN';
                 
-                // SIMPAN STATUS KE DATABASE AGAR BISA DI-FILTER!
                 $user->update(['bsre_status' => $status]);
                 
                 return response()->json(['status' => $status]);
             }
 
+            // 2. Tangani Respon Gagal dari API BSrE (HTTP 4xx / 5xx)
+            if ($response && $response->failed()) {
+                if (is_array($response->json())) {
+                    $jsonError = $response->json();
+                    $msg = $jsonError['error'] ?? $jsonError['message'] ?? 'Kesalahan server BSrE';
+                } else {
+                    $msg = 'HTTP ' . $response->status() . ' Error';
+                }
+
+                // Simpan pesan error asli ke database sebagai status terakhir
+                $user->update(['bsre_status' => $msg]);
+
+                return response()->json(['status' => $msg], $response->status());
+            }
+
             return response()->json(['status' => 'ERROR_KONEKSI'], 500);
             
         } catch (\Exception $e) {
-            return response()->json(['status' => 'ERROR_KONEKSI'], 500);
+            // Tangani jika server down / timeout
+            return response()->json(['status' => 'TIDAK_DAPAT_TERHUBUNG'], 500);
         }
     }
 

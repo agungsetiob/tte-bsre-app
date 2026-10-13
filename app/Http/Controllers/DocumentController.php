@@ -61,7 +61,9 @@ class DocumentController extends Controller
         $pageCount = $pdf->setSourceFile($fileObj->getRealPath());
         $pdf->SetAutoPageBreak(false);
 
-        $disclaimerText = "Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik yang diterbitkan oleh BSrE, BSSN.";
+        $disclaimerText = "
+        Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik yang diterbitkan oleh BSrE, BSSN.
+        Scan QR Code untuk memverifikasi dokumen ini.";
 
         for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
             $templateId = $pdf->importPage($pageNo);
