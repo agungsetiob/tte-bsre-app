@@ -140,9 +140,9 @@ class TteController extends Controller
                 ->exists();
 
             // Status dokumen utama menjadi 'signed' jika SEMUA signer sudah selesai TTE, 
-            // jika belum, status tetap 'on_process'
+            // jika belum, status tetap 'forwarded'
             $document->update([
-                'status'           => $hasRemainingSigners ? 'on_process' : 'signed',
+                'status'           => $hasRemainingSigners ? 'forwarded' : 'signed',
                 'signed_file_path' => $newSignedFilePath
             ]);
 

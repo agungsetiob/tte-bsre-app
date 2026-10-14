@@ -3,40 +3,39 @@ import { Head, useForm, usePage, Link, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { ref, computed, watch } from 'vue';
 import TteProcessModal from '@/Components/TteProcessModal.vue';
-import { FileText, XCircle, CheckCircle, Clock } from 'lucide-vue-next';
+import Modal from '@/Components/Modal.vue';
+import {
+    FileText,
+    XCircle,
+    CheckCircle2,
+    Clock4,
+    Search,
+    UploadCloud,
+    Plus,
+    Inbox,
+    ExternalLink,
+    Download,
+    PenLine,
+    Filter,
+    ChevronDown,
+} from 'lucide-vue-next';
 
 const props = defineProps<{
-    documents: {
-        data: Array<any>;
-        links: Array<any>;
-    };
-    filters: {
-        search?: string;
-        status?: string;
-    };
-    auth: {
-        user: {
-            name: string;
-            specimen_path: string | null;
-        };
-    };
+    documents: { data: Array<any>; links: Array<any> };
+    filters: { search?: string; status?: string };
+    auth: { user: { name: string; specimen_path: string | null } };
 }>();
 
 const page = usePage();
 const flashSuccess = computed(() => (page.props.flash as any)?.success);
 
-// State Filter
 const search = ref(props.filters.search || '');
 const statusFilter = ref(props.filters.status || '');
 
-// Modals
 const showUploadModal = ref(false);
 const showSignModal = ref(false);
 const activeDoc = ref<any>(null);
 
-const assetUrl = (path: string) => '/storage/' + path;
-
-// Form Murni Upload
 const uploadForm = useForm({
     title: '',
     file: null as File | null,
@@ -45,7 +44,10 @@ const uploadForm = useForm({
 const submitUpload = () => {
     uploadForm.post(route('documents.store'), {
         preserveScroll: true,
-        onSuccess: () => { showUploadModal.value = false; uploadForm.reset(); }
+        onSuccess: () => {
+            showUploadModal.value = false;
+            uploadForm.reset();
+        },
     });
 };
 
@@ -54,169 +56,426 @@ const openSignModal = (doc: any) => {
     showSignModal.value = true;
 };
 
-// Auto-trigger pencarian saat user mengetik (dengan jeda 500ms)
 let searchTimeout: any = null;
 watch([search, statusFilter], ([newSearch, newStatus]) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        router.get(route('documents.index'), {
-            search: newSearch,
-            status: newStatus
-        }, { preserveState: true, replace: true });
+        router.get(
+            route('documents.index'),
+            { search: newSearch, status: newStatus },
+            { preserveState: true, replace: true }
+        );
     }, 500);
 });
+
+const statusMeta = (s: string) =>
+    ({
+        pending: {
+            label: 'Menunggu TTE',
+            cls: 'bg-amber-50 text-amber-700 border-amber-200',
+            dot: 'bg-amber-500',
+        },
+        forwarded: {
+            label: 'Diteruskan',
+            cls: 'bg-sky-50 text-sky-700 border-sky-200',
+            dot: 'bg-sky-500',
+        },
+        signed: {
+            label: 'Selesai di-TTE',
+            cls: 'bg-[#EAF7F3] text-[#0B7563] border-[#BCE5DA]',
+            dot: 'bg-[#0B8570]',
+        },
+        rejected: {
+            label: 'Ditolak / Dikembalikan',
+            cls: 'bg-rose-50 text-rose-700 border-rose-200',
+            dot: 'bg-rose-500',
+        },
+    }[s] || {
+        label: s || '—',
+        cls: 'bg-slate-50 text-slate-700 border-slate-200',
+        dot: 'bg-slate-400',
+    });
 </script>
 
 <template>
     <Head title="Manajemen Dokumen" />
+
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex justify-between items-center">
-                <h2 class="font-semibold text-xl text-slate-800 leading-tight">Manajemen Dokumen</h2>
-                <div class="space-x-3">
-                    <Link :href="route('documents.requests')" class="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-50">
-                        Lihat Permintaan TTE
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="font-display text-xl font-bold leading-tight text-[#0F2A2E]">
+                        Manajemen Dokumen
+                    </h2>
+                    <p class="mt-1 text-xs text-[#6A8593]">
+                        Kelola, tanda tangani, dan pantau dokumen rumah sakit dalam satu dasbor.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <Link
+                        :href="route('documents.requests')"
+                        class="inline-flex items-center gap-2 rounded-xl border border-[#B9D3CD] bg-white px-4 py-2 text-sm font-semibold text-[#0F2A2E] transition-all hover:border-[#0B8570] hover:bg-[#F2FBF8]"
+                    >
+                        <Inbox class="h-4 w-4 text-[#0B7563]" />
+                        Permintaan TTE
                     </Link>
-                    <button @click="showUploadModal = true; uploadForm.reset();" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm">
-                        + Unggah Dokumen
+                    <button
+                        type="button"
+                        @click="showUploadModal = true; uploadForm.reset();"
+                        class="group inline-flex items-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B]"
+                    >
+                        <Plus class="h-4 w-4" />
+                        Unggah Dokumen
                     </button>
                 </div>
             </div>
         </template>
 
-        <div class="py-8 max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
-            <div v-if="flashSuccess" class="p-4 bg-green-50 text-green-700 border border-green-200 shadow-sm rounded-lg font-medium">{{ flashSuccess }}</div>
-            
-            <!-- FILTER & SEARCH BAR -->
-            <div class="flex flex-col sm:flex-row gap-4 justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <div class="w-full sm:w-1/3">
-                    <input type="text" v-model="search" placeholder="Cari judul dokumen..." class="w-full rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="w-full sm:w-auto">
-                    <select v-model="statusFilter" class="w-full sm:w-64 rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Semua Status</option>
-                        <option value="pending">Menunggu TTE</option>
-                        <option value="forwarded">Diteruskan</option>
-                        <option value="signed">Selesai di-TTE</option>
-                        <option value="rejected">Ditolak / Dikembalikan</option>
-                    </select>
+        <div class="mx-auto w-full max-w-8xl space-y-5 px-5 py-8 text-[#0F2A2E] md:px-8">
+            <!-- Flash success -->
+            <div
+                v-if="flashSuccess"
+                class="flex items-start gap-3 rounded-2xl border border-[#BCE5DA] bg-[#EAF7F3] p-4 text-sm text-[#0B7563] shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
+            >
+                <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0" />
+                <span class="font-medium">{{ flashSuccess }}</span>
+            </div>
+
+            <!-- Filter bar -->
+            <div
+                class="rounded-2xl border border-[#DCE8E5] bg-white p-4 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
+            >
+                <div class="flex flex-col gap-3 sm:flex-row">
+                    <div class="relative flex-1">
+                        <Search
+                            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                        />
+                        <input
+                            v-model="search"
+                            type="text"
+                            placeholder="Cari judul dokumen..."
+                            class="w-full rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] py-2.5 pl-9 pr-3 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-0"
+                        />
+                    </div>
+                    <div class="relative sm:w-64">
+                        <Filter
+                            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                        />
+                        <select
+                            v-model="statusFilter"
+                            class="w-full appearance-none rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] py-2.5 pl-9 pr-8 text-sm text-[#0F2A2E] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-0"
+                        >
+                            <option value="">Semua Status</option>
+                            <option value="pending">Menunggu TTE</option>
+                            <option value="forwarded">Diteruskan</option>
+                            <option value="signed">Selesai di-TTE</option>
+                            <option value="rejected">Ditolak / Dikembalikan</option>
+                        </select>
+                        <ChevronDown
+                            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                        />
+                    </div>
                 </div>
             </div>
 
-            <!-- TABEL DOKUMEN -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-xl border border-slate-200 pb-4">
+            <!-- Table card -->
+            <div
+                class="overflow-hidden rounded-2xl border border-[#DCE8E5] bg-white shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
+            >
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Judul</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Informasi</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Aksi</th>
+                    <table class="min-w-full">
+                        <thead class="bg-[#F8FCFB] text-[#0F2A2E]">
+                            <tr class="border-b border-[#E9F0EE]">
+                                <th
+                                    class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                                >
+                                    Judul
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                                >
+                                    Status
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                                >
+                                    Informasi
+                                </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-200 bg-white">
-                            
-                            <!-- STATE JIKA DATA KOSONG -->
+                        <tbody class="divide-y divide-[#EEF4F2]">
+                            <!-- Empty state -->
                             <tr v-if="documents.data.length === 0">
-                                <td colspan="4" class="px-6 py-12 text-center text-slate-500">
-                                    <div class="flex flex-col items-center justify-center">
-                                        <FileText class="w-12 h-12 text-slate-300 mb-3" />
-                                        <p class="font-medium text-slate-600">Tidak ada dokumen ditemukan</p>
-                                        <p class="text-sm mt-1">Coba sesuaikan kata kunci pencarian atau filter status Anda.</p>
+                                <td colspan="4" class="px-6 py-16 text-center">
+                                    <div class="flex flex-col items-center gap-3">
+                                        <div
+                                            class="grid h-14 w-14 place-items-center rounded-2xl bg-[#EAF7F3]"
+                                        >
+                                            <FileText class="h-7 w-7 text-[#0B7563]" />
+                                        </div>
+                                        <div>
+                                            <p
+                                                class="font-display text-sm font-bold text-[#0F2A2E]"
+                                            >
+                                                Tidak ada dokumen ditemukan
+                                            </p>
+                                            <p class="mt-1 text-xs text-[#6A8593]">
+                                                Sesuaikan kata kunci pencarian atau filter status Anda.
+                                            </p>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
 
-                            <!-- LOOPING DOKUMEN -->
-                            <tr v-for="doc in documents.data" :key="doc.id" class="hover:bg-slate-50 transition-colors">
-                                <td class="px-6 py-4 text-sm font-medium text-slate-900">{{ doc.title }}</td>
-                                <td class="px-6 py-4 text-sm">
-                                    <div class="flex flex-col items-start gap-1.5">
-                                        <span 
-                                            :class="{
-                                                'bg-green-100 text-green-800 border-green-200': doc.status === 'signed',
-                                                'bg-red-100 text-red-800 border-red-200': doc.status === 'rejected',
-                                                'bg-amber-100 text-amber-800 border-amber-200': doc.status === 'forwarded',
-                                                'bg-yellow-100 text-yellow-800 border-yellow-200': doc.status === 'pending'
-                                            }" 
-                                            class="px-2.5 py-1 text-xs font-bold rounded-md border"
+                            <!-- Rows -->
+                            <tr
+                                v-for="doc in documents.data"
+                                :key="doc.id"
+                                class="transition-colors hover:bg-[#F8FCFB]"
+                            >
+                                <!-- Judul -->
+                                <td class="px-6 py-4 align-top">
+                                    <div class="flex max-w-xs items-start gap-3">
+                                        <span
+                                            class="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#EAF7F3] text-[#0B7563]"
                                         >
-                                            {{ 
-                                                doc.status === 'signed' ? 'Selesai di-TTE' : 
-                                                (doc.status === 'rejected' ? 'Ditolak / Dikembalikan' : 
-                                                (doc.status === 'forwarded' ? 'Diteruskan' : 'Menunggu TTE')) 
-                                            }}
+                                            <FileText class="h-4 w-4" />
                                         </span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-sm">
-                                    <div class="flex flex-col items-start gap-1.5">
-                                        <div v-if="doc.signers && doc.signers.length > 0" class="flex flex-col gap-1.5 mt-1">
-                                            <template v-for="signer in doc.signers" :key="signer.id">
-                                                <div v-if="signer.status === 'pending'" class="inline-flex items-center gap-1 bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200 text-[10px] font-semibold whitespace-nowrap">
-                                                    <Clock class="w-3.5 h-3.5 text-slate-400" />
-                                                    Menunggu: {{ signer.signer?.name || signer.user?.name }}
-                                                </div>
-                                                <div v-else-if="signer.status === 'rejected'" class="inline-flex items-center gap-1 bg-red-50 text-red-600 px-2 py-1 rounded border border-red-100 text-[10px] font-semibold whitespace-nowrap">
-                                                    <XCircle class="w-3.5 h-3.5" />
-                                                    Ditolak oleh: {{ signer.signer?.name || signer.user?.name }}
-                                                </div>
-                                                <div v-else-if="signer.status === 'signed'" class="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded border border-green-100 text-[10px] font-semibold whitespace-nowrap">
-                                                    <CheckCircle class="w-3.5 h-3.5" />
-                                                    Selesai: {{ signer.signer?.name || signer.user?.name }}
-                                                </div>
-                                            </template>
+                                        <div class="min-w-0">
+                                            <p
+                                                class="truncate text-sm font-semibold text-[#0F2A2E]"
+                                                :title="doc.title"
+                                            >
+                                                {{ doc.title }}
+                                            </p>
+                                            <p class="mt-0.5 text-[11px] text-[#6A8593]">
+                                                #{{ doc.id }}
+                                            </p>
                                         </div>
-                                        <div v-else class="text-xs text-slate-400 italic">Belum ada penandatangan</div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-right text-sm font-medium space-x-3">
-                                    <Link :href="route('documents.show', doc.id)" class="text-slate-600 hover:text-slate-900 transition-colors">Detail</Link>
-                                    <button @click="openSignModal(doc)" class="text-blue-600 hover:text-blue-900 font-bold transition-colors">Proses TTE</button>
-                                    <a :href="route('documents.download', doc.id)" target="_blank" class="text-slate-600 hover:text-slate-900 transition-colors">Unduh</a>
+
+                                <!-- Status -->
+                                <td class="px-6 py-4 align-top">
+                                    <span
+                                        :class="statusMeta(doc.status).cls"
+                                        class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                                    >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :class="statusMeta(doc.status).dot"
+                                        />
+                                        {{ statusMeta(doc.status).label }}
+                                    </span>
+                                </td>
+
+                                <!-- Informasi / Signers -->
+                                <td class="px-6 py-4 align-top">
+                                    <div
+                                        v-if="doc.signers && doc.signers.length"
+                                        class="flex flex-col gap-1.5"
+                                    >
+                                        <template v-for="signer in doc.signers" :key="signer.id">
+                                            <div
+                                                v-if="signer.status === 'pending'"
+                                                class="inline-flex w-fit items-center gap-1.5 rounded-md border border-[#E9F0EE] bg-[#F8FCFB] px-2 py-1 text-[11px] font-medium text-[#4A6572]"
+                                            >
+                                                <Clock4 class="h-3 w-3 text-[#6A8593]" />
+                                                Menunggu:
+                                                <span class="font-semibold text-[#0F2A2E]">
+                                                    {{
+                                                        signer.signer?.name ||
+                                                        signer.user?.name
+                                                    }}
+                                                </span>
+                                            </div>
+                                            <div
+                                                v-else-if="signer.status === 'rejected'"
+                                                class="inline-flex w-fit items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] font-medium text-rose-700"
+                                            >
+                                                <XCircle class="h-3 w-3" />
+                                                Ditolak:
+                                                <span class="font-semibold">
+                                                    {{
+                                                        signer.signer?.name ||
+                                                        signer.user?.name
+                                                    }}
+                                                </span>
+                                            </div>
+                                            <div
+                                                v-else-if="signer.status === 'signed'"
+                                                class="inline-flex w-fit items-center gap-1.5 rounded-md border border-[#BCE5DA] bg-[#EAF7F3] px-2 py-1 text-[11px] font-medium text-[#0B7563]"
+                                            >
+                                                <CheckCircle2 class="h-3 w-3" />
+                                                Selesai:
+                                                <span class="font-semibold">
+                                                    {{
+                                                        signer.signer?.name ||
+                                                        signer.user?.name
+                                                    }}
+                                                </span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <span
+                                        v-else
+                                        class="text-xs italic text-[#A8BCC2]"
+                                    >
+                                        Belum ada penandatangan
+                                    </span>
+                                </td>
+
+                                <!-- Aksi -->
+                                <td class="px-6 py-4 align-top text-right">
+                                    <div class="flex items-center justify-end gap-1">
+                                        <Link
+                                            :href="route('documents.show', doc.id)"
+                                            class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#4A6572] transition-colors hover:bg-[#EEF4F2] hover:text-[#0F2A2E]"
+                                        >
+                                            <ExternalLink class="h-3.5 w-3.5" />
+                                            Detail
+                                        </Link>
+                                        <a
+                                            :href="route('documents.download', doc.id)"
+                                            target="_blank"
+                                            class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#4A6572] transition-colors hover:bg-[#EEF4F2] hover:text-[#0F2A2E]"
+                                        >
+                                            <Download class="h-3.5 w-3.5" />
+                                            Unduh
+                                        </a>
+                                        <button
+                                            type="button"
+                                            @click="openSignModal(doc)"
+                                            class="inline-flex items-center gap-1 rounded-lg bg-[#0B8570] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#086B5B]"
+                                        >
+                                            <PenLine class="h-3.5 w-3.5" />
+                                            Proses TTE
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                <!-- PAGINATION LINKS -->
-                <div v-if="documents.links && documents.links.length > 3" class="mt-6 flex justify-center">
-                    <div class="flex flex-wrap gap-1">
-                        <template v-for="(link, k) in documents.links" :key="k">
-                            <div v-if="link.url === null" class="px-3 py-1.5 text-sm text-slate-400 border border-slate-200 rounded-lg bg-slate-50" v-html="link.label"></div>
-                            <Link v-else :href="link.url" :class="link.active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'" class="px-3 py-1.5 text-sm border rounded-lg transition-colors shadow-sm" v-html="link.label" preserve-scroll />
-                        </template>
-                    </div>
+            <!-- Pagination -->
+            <div
+                v-if="documents.links && documents.links.length > 3"
+                class="flex justify-center pt-2"
+            >
+                <div
+                    class="inline-flex items-center gap-1 rounded-xl border border-[#DCE8E5] bg-white p-1 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
+                >
+                    <template v-for="(link, k) in documents.links" :key="k">
+                        <div
+                            v-if="link.url === null"
+                            class="cursor-not-allowed rounded-lg px-3 py-1.5 text-xs font-semibold text-[#A8BCC2]"
+                            v-html="link.label"
+                        />
+                        <Link
+                            v-else
+                            :href="link.url"
+                            preserve-scroll
+                            :class="
+                                link.active
+                                    ? 'bg-[#0B8570] text-white'
+                                    : 'text-[#4A6572] hover:bg-[#F2FBF8] hover:text-[#0B7563]'
+                            "
+                            class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
+                            v-html="link.label"
+                        />
+                    </template>
                 </div>
             </div>
         </div>
 
-        <!-- MODAL UPLOAD MURNI -->
-        <div v-if="showUploadModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-                <h3 class="text-lg font-bold text-slate-900 mb-4">Unggah Dokumen Baru</h3>
-                <form @submit.prevent="submitUpload" class="space-y-4">
+        <!-- Upload Modal -->
+        <Modal :show="showUploadModal" max-width="md" @close="showUploadModal = false">
+            <div class="p-6">
+                <div class="flex items-start gap-3">
+                    <span
+                        class="grid h-10 w-10 place-items-center rounded-xl bg-[#EAF7F3] text-[#0B7563]"
+                    >
+                        <UploadCloud class="h-5 w-5" />
+                    </span>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700">Judul Dokumen</label>
-                        <input type="text" v-model="uploadForm.title" required class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                        <h3 class="font-display text-lg font-bold text-[#0F2A2E]">
+                            Unggah Dokumen Baru
+                        </h3>
+                        <p class="mt-0.5 text-xs text-[#6A8593]">
+                            Pastikan file berformat PDF dan siap ditandatangani.
+                        </p>
+                    </div>
+                </div>
+
+                <form @submit.prevent="submitUpload" class="mt-5 space-y-4">
+                    <div>
+                        <label
+                            class="block text-xs font-semibold uppercase tracking-wider text-[#6A8593]"
+                        >
+                            Judul Dokumen
+                        </label>
+                        <input
+                            v-model="uploadForm.title"
+                            type="text"
+                            required
+                            class="mt-1.5 block w-full rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] px-3 py-2.5 text-sm text-[#0F2A2E] focus:border-[#0B8570] focus:outline-none focus:ring-0"
+                        />
+                        <p
+                            v-if="uploadForm.errors.title"
+                            class="mt-1 text-xs text-rose-600"
+                        >
+                            {{ uploadForm.errors.title }}
+                        </p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700">File PDF</label>
-                        <input type="file" accept="application/pdf" @change="(e: any) => uploadForm.file = e.target.files[0]" required class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                        <label
+                            class="block text-xs font-semibold uppercase tracking-wider text-[#6A8593]"
+                        >
+                            File PDF
+                        </label>
+                        <input
+                            type="file"
+                            accept="application/pdf"
+                            @change="(e: any) => (uploadForm.file = e.target.files[0])"
+                            required
+                            class="mt-1.5 block w-full text-sm text-[#4A6572] file:mr-3 file:rounded-lg file:border-0 file:bg-[#EAF7F3] file:px-3 file:py-2 file:text-xs file:font-semibold file:text-[#0B7563] hover:file:bg-[#D9F0E9]"
+                        />
+                        <p
+                            v-if="uploadForm.errors.file"
+                            class="mt-1 text-xs text-rose-600"
+                        >
+                            {{ uploadForm.errors.file }}
+                        </p>
                     </div>
-                    <div class="flex justify-end gap-2 pt-4">
-                        <button type="button" @click="showUploadModal = false" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200">Batal</button>
-                        <button type="submit" :disabled="uploadForm.processing" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+
+                    <div class="flex justify-end gap-2 border-t border-[#EEF4F2] pt-4">
+                        <button
+                            type="button"
+                            @click="showUploadModal = false"
+                            class="rounded-xl border border-[#D9E6E3] bg-white px-4 py-2 text-sm font-semibold text-[#4A6572] transition-colors hover:bg-[#F2FBF8]"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="uploadForm.processing"
+                            class="rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:bg-[#086B5B] disabled:opacity-50"
+                        >
                             {{ uploadForm.processing ? 'Mengunggah...' : 'Unggah Dokumen' }}
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
 
-        <TteProcessModal v-if="activeDoc" v-model:show="showSignModal" :document="activeDoc"
-            :specimen-path="auth.user.specimen_path" />
+        <!-- TTE Modal -->
+        <TteProcessModal
+            v-if="activeDoc"
+            v-model:show="showSignModal"
+            :document="activeDoc"
+            :specimen-path="auth.user.specimen_path"
+        />
     </AuthenticatedLayout>
 </template>

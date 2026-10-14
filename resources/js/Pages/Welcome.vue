@@ -86,8 +86,6 @@ onMounted(() => {
     </header>
 
     <div class="page-shell min-h-screen overflow-x-hidden text-[#0F2A2E]">
-        <!-- NAVBAR: selalu menempel di atas -->
-
         <!-- HERO -->
         <section class="mx-auto w-full max-w-[1180px] px-5 pb-14 pt-[92px] md:px-8 md:pb-20 md:pt-[108px]">
             <div class="grid items-center gap-10 lg:grid-cols-[1.05fr_.95fr] lg:gap-14">

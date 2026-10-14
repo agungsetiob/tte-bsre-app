@@ -1,186 +1,250 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import { ref, computed } from 'vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
-import NavLink from '@/Components/NavLink.vue';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import {
+    LayoutDashboard,
+    FileText,
+    History,
+    Users,
+    Menu,
+    X,
+    ChevronDown,
+    LogOut,
+    UserCircle2,
+} from 'lucide-vue-next';
 
-const showingNavigationDropdown = ref(false);
+const page = usePage();
+
+const sidebarOpen = ref(false);
+
+const user = computed(() => (page.props.auth as any)?.user ?? { name: '', email: '' });
+const userInitial = computed(() => user.value.name?.charAt(0)?.toUpperCase() ?? '?');
+
+/** Judul section di topbar — reaktif terhadap perubahan URL */
+const sectionTitle = computed(() => {
+    const url = page.url || '';
+    if (url.startsWith('/admin/users')) return 'Manajemen Pengguna';
+    if (url.startsWith('/documents')) return 'Manajemen Dokumen';
+    if (url.startsWith('/histories')) return 'Histori';
+    if (url.startsWith('/profile')) return 'Profil';
+    return 'Dashboard';
+});
+
+const userRole = computed(
+    () => (page.props.auth as any)?.user?.role
+);
+
+const canAccessMenu = (item: any) => {
+    const hasRoute =
+        !item.requires || route().has(item.requires);
+
+    const hasRole =
+        !item.roles || item.roles.includes(userRole.value);
+
+    return hasRoute && hasRole;
+};
+
+const navItems = [
+    { label: 'Dashboard', route: 'dashboard', pattern: 'dashboard', icon: LayoutDashboard },
+    { label: 'Dokumen', route: 'documents.index', pattern: 'documents.*', icon: FileText, requires: 'documents.index' },
+    { label: 'Histori', route: 'histories.index', pattern: 'histories.*', icon: History, requires: 'histories.index' },
+    { label: 'Pengguna', route: 'admin.users.index', pattern: 'admin.users.*', icon: Users, requires: 'admin.users.index', roles: ['admin'] },
+] as const;
+
+const closeSidebar = () => {
+    sidebarOpen.value = false;
+};
 </script>
 
 <template>
-    <div>
-        <div class="min-h-screen bg-slate-50 font-sans text-gray-900">
-            <!-- Navbar dengan gaya Glassmorphism & Sticky -->
-            <nav class="sticky top-0 z-50 w-full border-b border-gray-200 bg-white/80 backdrop-blur-md shadow-sm transition-all duration-300">
-                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div class="flex h-16 justify-between items-center">
-                        <div class="flex items-center gap-8">
-                            <!-- Logo -->
-                            <div class="flex shrink-0 items-center">
-                                <Link :href="route('dashboard')" class="transition-transform hover:scale-105">
-                                    <ApplicationLogo class="block h-10 w-auto fill-current text-blue-600" />
-                                </Link>
-                            </div>
+    <div class="min-h-screen bg-[#F8FCFB] font-sans text-[#0F2A2E]">
+        <!-- Backdrop (mobile) -->
+        <Transition
+            enter-active-class="ease-out duration-200"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="ease-in duration-150"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="sidebarOpen"
+                class="fixed inset-0 z-40 bg-[#0F2A2E]/50 backdrop-blur-sm lg:hidden"
+                @click="closeSidebar"
+            />
+        </Transition>
 
-                            <!-- Navigation Links (Desktop) -->
-                            <div class="hidden space-x-2 sm:flex sm:items-center">
-                                <NavLink
-                                    :href="route('dashboard')"
-                                    :active="route().current('dashboard')"
-                                    class="flex items-center gap-2 px-3 py-2 rounded-md transition-colors"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                                    </svg>
-                                    Dashboard
-                                </NavLink>
+        <!-- ============ SIDEBAR ============ -->
+        <aside
+            :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+            class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[#E9F0EE] bg-white shadow-[0_0_40px_-24px_rgba(15,42,46,.25)] transition-transform duration-300 lg:z-30"
+        >
+            <!-- Logo -->
+            <div class="flex h-20 shrink-0 items-center justify-between border-b border-[#E9F0EE] px-5">
+                <Link :href="route('dashboard')" class="group flex items-center">
+                    <img
+                        src="/logo.png"
+                        alt="HELODOCS — Hospital Electronic Document Sign"
+                        class="h-10 w-auto transition-transform duration-300 group-hover:scale-[1.03] md:h-14"
+                    />
+                </Link>
+                <button
+                    type="button"
+                    class="grid h-8 w-8 place-items-center rounded-lg text-[#6A8593] transition-colors hover:bg-[#F2FBF8] hover:text-[#0B7563] lg:hidden"
+                    aria-label="Tutup menu"
+                    @click="closeSidebar"
+                >
+                    <X class="h-4 w-4" />
+                </button>
+            </div>
 
-                                <NavLink
-                                    v-if="route().has('documents.index')"
-                                    :href="route('documents.index')"
-                                    :active="route().current('documents.*')"
-                                    class="flex items-center gap-2 px-3 py-2 rounded-md transition-colors"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
-                                    Dokumen
-                                </NavLink>
+            <!-- Nav links -->
+            <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
 
-                                <NavLink
-                                    v-if="route().has('histories.index')"
-                                    :href="route('histories.index')"
-                                    :active="route().current('histories.*')"
-                                    class="flex items-center gap-2 px-3 py-2 rounded-md transition-colors"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    Histori
-                                </NavLink>
-                                <NavLink
-                                    v-if="route().has('admin.users.index')"
-                                    :href="route('admin.users.index')"
-                                    :active="route().current('admin.users.*')"
-                                    class="flex items-center gap-2 px-3 py-2 rounded-md transition-colors"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v2a3 3 0 01-3 3H9a3 3 0 01-3-3v-2m12 0h-2.586a1 1 0 00-.707.293l-2.828 2.828a1 1 0 01-.707.293H7a1 1 0 01-1-1v-2a1 1 0 011-1h2.586a1 1 0 00.707-.293       l2.828-2.828a1 1 0 01.707-.293H17a1 1 0 011 1v2a1 1 0 01-1 1z" />
-                                    </svg>
-                                    Pengguna
-                                </NavLink>
-                            </div>
-                        </div>
-
-                        <div class="hidden sm:ms-6 sm:flex sm:items-center">
-                            <!-- Settings Dropdown -->
-                            <div class="relative ms-3">
-                                <Dropdown align="right" width="48">
-                                    <template #trigger>
-                                        <span class="inline-flex rounded-full bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200">
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-gray-700 transition duration-150 ease-in-out hover:text-blue-600 focus:outline-none"
-                                            >
-                                                <!-- Avatar Placeholder -->
-                                                <div class="h-6 w-6 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 text-white flex items-center justify-center text-xs">
-                                                    {{ $page.props.auth.user.name.charAt(0) }}
-                                                </div>
-                                                {{ $page.props.auth.user.name }}
-                                                
-                                                <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                    </template>
-
-                                    <template #content>
-                                        <div class="px-4 py-3 border-b border-gray-100">
-                                            <p class="text-sm">Masuk sebagai</p>
-                                            <p class="text-sm font-medium text-gray-900 truncate">{{ $page.props.auth.user.email }}</p>
-                                        </div>
-                                        <DropdownLink :href="route('profile.edit')" class="flex items-center gap-2">
-                                            Profil Saya
-                                        </DropdownLink>
-                                        <DropdownLink :href="route('logout')" method="post" as="button" class="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50">
-                                            Keluar Aplikasi
-                                        </DropdownLink>
-                                    </template>
-                                </Dropdown>
-                            </div>
-                        </div>
-
-                        <!-- Hamburger (Mobile) -->
-                        <div class="-me-2 flex items-center sm:hidden">
-                            <button
-                                @click="showingNavigationDropdown = !showingNavigationDropdown"
-                                class="inline-flex items-center justify-center rounded-md p-2 text-gray-500 transition duration-150 ease-in-out hover:bg-gray-100 hover:text-gray-700 focus:bg-gray-100 focus:outline-none"
-                            >
-                                <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                    <path
-                                        :class="{ hidden: showingNavigationDropdown, 'inline-flex': !showingNavigationDropdown }"
-                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        :class="{ hidden: !showingNavigationDropdown, 'inline-flex': showingNavigationDropdown }"
-                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Responsive Navigation Menu -->
-                <div :class="{ block: showingNavigationDropdown, hidden: !showingNavigationDropdown }" class="sm:hidden border-t border-gray-200 bg-white">
-                    <div class="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                            Dashboard
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink v-if="route().has('documents.index')" :href="route('documents.index')" :active="route().current('documents.*')">
-                            Dokumen
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink v-if="route().has('histories.index')" :href="route('histories.index')" :active="route().current('histories.*')">
-                            Histori
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink v-if="route().has('admin.users.index')" :href="route('admin.users.index')" :active="route().current('admin.users.*')">
-                            Pengguna
-                        </ResponsiveNavLink>
-                    </div>
-
-                    <!-- Responsive Settings Options -->
-                    <div class="border-t border-gray-200 pb-1 pt-4 bg-gray-50">
-                        <div class="px-4 flex items-center gap-3">
-                            <div class="h-10 w-10 rounded-full bg-gradient-to-tr from-blue-500 to-cyan-400 text-white flex items-center justify-center font-bold">
-                                {{ $page.props.auth.user.name.charAt(0) }}
-                            </div>
-                            <div>
-                                <div class="text-base font-medium text-gray-800">{{ $page.props.auth.user.name }}</div>
-                                <div class="text-sm font-medium text-gray-500">{{ $page.props.auth.user.email }}</div>
-                            </div>
-                        </div>
-
-                        <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="route('profile.edit')">Profil</ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('logout')" method="post" as="button" class="text-red-600">Keluar</ResponsiveNavLink>
-                        </div>
-                    </div>
-                </div>
+                <template v-for="item in navItems" :key="item.label">
+                    <Link
+                        v-if="canAccessMenu(item)"
+                        :href="route(item.route)"
+                        :class="
+                            route().current(item.pattern)
+                                ? 'bg-[#EAF7F3] text-[#0B7563]'
+                                : 'text-[#4A6572] hover:bg-[#F8FCFB] hover:text-[#0F2A2E]'
+                        "
+                        class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
+                        @click="closeSidebar"
+                    >
+                        <component
+                            :is="item.icon"
+                            class="h-[18px] w-[18px] shrink-0"
+                            :class="
+                                route().current(item.pattern)
+                                    ? 'text-[#0B8570]'
+                                    : 'text-[#6A8593] group-hover:text-[#0B7563]'
+                            "
+                        />
+                        <span>{{ item.label }}</span>
+                    </Link>
+                </template>
             </nav>
 
-            <!-- Page Heading -->
-            <header class="bg-white shadow-sm border-b border-gray-200 relative z-10" v-if="$slots.header">
-                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <!-- Footer sidebar: BSrE -->
+            <div class="shrink-0 space-y-3 border-t border-[#E9F0EE] p-4">
+                <div
+                    class="rounded-2xl border border-[#DCE8E5] bg-gradient-to-br from-[#F8FCFB] to-[#F1F7F5] p-3.5"
+                >
+                    <div class="flex items-center gap-3 justify-center">
+                        <img
+                            src="/bsre-logo.png"
+                            alt="Balai Sertifikasi Elektronik (BSrE) — BSSN"
+                            class="h-10 w-auto shrink-0"
+                        />
+                    </div>
+                </div>
+
+                <p class="text-center text-[10px] leading-relaxed text-[#A8BCC2]">
+                    &copy; {{ new Date().getFullYear() }} RSUD dr. H. Andi Abdurrahman Noor
+                </p>
+            </div>
+        </aside>
+
+        <!-- ============ MAIN ============ -->
+        <div class="lg:pl-72">
+            <!-- Topbar -->
+            <header
+                class="sticky top-0 z-20 border-b border-[#E9F0EE] bg-white/85 backdrop-blur-md"
+            >
+                <div class="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+                    <!-- Toggle mobile -->
+                    <button
+                        type="button"
+                        class="grid h-9 w-9 place-items-center rounded-lg border border-[#E9F0EE] text-[#4A6572] transition-colors hover:bg-[#F8FCFB] hover:text-[#0F2A2E] lg:hidden"
+                        aria-label="Buka menu"
+                        @click="sidebarOpen = true"
+                    >
+                        <Menu class="h-4 w-4" />
+                    </button>
+
+                    <!-- Breadcrumb -->
+                    <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
+                        <span class="hidden text-[#A8BCC2] sm:inline">Ruang Pengelola</span>
+                        <span class="hidden text-[#D9E6E3] sm:inline">/</span>
+                        <span class="truncate font-semibold text-[#0F2A2E]">
+                            {{ sectionTitle }}
+                        </span>
+                    </div>
+
+                    <!-- User dropdown -->
+                    <Dropdown align="right" width="56">
+                        <template #trigger>
+                            <button
+                                type="button"
+                                class="group inline-flex items-center gap-2.5 rounded-full border border-[#E9F0EE] bg-white py-1.5 pl-1.5 pr-3 text-sm font-semibold text-[#0F2A2E] transition-all hover:border-[#BCE5DA] hover:bg-[#F8FCFB]"
+                            >
+                                <span
+                                    class="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-[#0B8570] to-[#0B7563] text-xs font-bold text-white"
+                                >
+                                    {{ userInitial }}
+                                </span>
+                                <span class="hidden max-w-[10rem] truncate sm:block">
+                                    {{ user.name }}
+                                </span>
+                                <ChevronDown
+                                    class="h-3.5 w-3.5 text-[#6A8593] transition-transform group-hover:translate-y-0.5"
+                                />
+                            </button>
+                        </template>
+
+                        <template #content>
+                            <div class="border-b border-[#EEF4F2] px-4 py-3">
+                                <p
+                                    class="text-[11px] font-semibold uppercase tracking-wider text-[#A8BCC2]"
+                                >
+                                    Masuk sebagai
+                                </p>
+                                <p
+                                    class="mt-0.5 truncate text-sm font-semibold text-[#0F2A2E]"
+                                >
+                                    {{ user.name }}
+                                </p>
+                                <p class="truncate text-xs text-[#6A8593]">
+                                    {{ user.email }}
+                                </p>
+                            </div>
+                            <DropdownLink
+                                :href="route('profile.edit')"
+                                class="flex items-center gap-2"
+                            >
+                                <UserCircle2 class="h-4 w-4" />
+                                Profil Saya
+                            </DropdownLink>
+                            <DropdownLink
+                                :href="route('logout')"
+                                method="post"
+                                as="button"
+                                class="flex items-center gap-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                            >
+                                <LogOut class="h-4 w-4" />
+                                Keluar Aplikasi
+                            </DropdownLink>
+                        </template>
+                    </Dropdown>
+                </div>
+            </header>
+
+            <!-- Page Heading (slot) -->
+            <header
+                v-if="$slots.header"
+                class="border-b border-[#E9F0EE] bg-white/60"
+            >
+                <div class="px-4 py-6 sm:px-6 lg:px-8">
                     <slot name="header" />
                 </div>
             </header>
 
             <!-- Page Content -->
-            <main class="relative z-0">
+            <main class="flex-1">
                 <slot />
             </main>
         </div>

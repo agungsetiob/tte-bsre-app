@@ -44,7 +44,7 @@ class PublicVerificationController extends Controller
     // 1. Menampilkan UI Halaman dengan Cepat
     public function showVerifyPage($code)
     {
-        $document = Document::with(['signers.user', 'owner'])
+        $document = Document::with(['signers.signer', 'owner'])
             ->where('verification_code', $code)
             ->firstOrFail();
 

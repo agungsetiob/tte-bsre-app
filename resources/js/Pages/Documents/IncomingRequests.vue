@@ -3,18 +3,27 @@ import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { ref, computed, watch } from 'vue';
 import TteProcessModal from '@/Components/TteProcessModal.vue';
-import { ArrowLeft, Inbox, PenTool, CheckCircle2, FileText, XCircle } from 'lucide-vue-next';
+import Modal from '@/Components/Modal.vue';
+import {
+    ArrowLeft,
+    Inbox,
+    PenLine,
+    CheckCircle2,
+    FileText,
+    XCircle,
+    Search,
+    Calendar,
+    Filter,
+    ChevronDown,
+    AlertTriangle,
+    Layers,
+    KeyRound,
+    AlertCircle,
+} from 'lucide-vue-next';
 
 const props = defineProps<{
-    incomingRequests: {
-        data: Array<any>;
-        links: Array<any>;
-    };
-    filters: {
-        search?: string;
-        status?: string;
-        date?: string;
-    };
+    incomingRequests: { data: Array<any>; links: Array<any> };
+    filters: { search?: string; status?: string; date?: string };
     auth: { user: { name: string; specimen_path: string | null } };
 }>();
 
@@ -22,27 +31,26 @@ const page = usePage();
 const flashSuccess = computed(() => (page.props.flash as any)?.success);
 const errorMessage = computed(() => (page.props.errors as any)?.message);
 
-// STATE FILTER & SEARCH
+// STATE FILTER
 const search = ref(props.filters.search || '');
-// Default ke 'pending' jika filter belum ada, agar behave seperti Inbox murni di awal
-const statusFilter = ref(props.filters.status ?? 'pending'); 
+const statusFilter = ref(props.filters.status ?? 'pending');
 const dateFilter = ref(props.filters.date || '');
 
-// Watcher untuk Filter dengan Debounce
 let searchTimeout: any = null;
 watch([search, statusFilter, dateFilter], ([newSearch, newStatus, newDate]) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        router.get(route('documents.requests'), {
-            search: newSearch,
-            status: newStatus,
-            date: newDate
-        }, { preserveState: true, replace: true });
+        router.get(
+            route('documents.requests'),
+            { search: newSearch, status: newStatus, date: newDate },
+            { preserveState: true, replace: true }
+        );
     }, 500);
 });
 
+// Sign Modal
 const showSignModal = ref(false);
-const activeDoc = ref(null);
+const activeDoc = ref<any>(null);
 const openSignModal = (req: any) => {
     activeDoc.value = req.document;
     showSignModal.value = true;
@@ -50,11 +58,15 @@ const openSignModal = (req: any) => {
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
-        day: '2-digit', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
     });
 };
 
+// Reject
 const showRejectModal = ref(false);
 const requestToReject = ref<any>(null);
 const rejectForm = useForm({ reason: '' });
@@ -68,15 +80,17 @@ const openRejectModal = (req: any) => {
 const submitReject = () => {
     rejectForm.post(route('documents.rejectSign', requestToReject.value.document.id), {
         preserveScroll: true,
-        onSuccess: () => { showRejectModal.value = false; }
+        onSuccess: () => {
+            showRejectModal.value = false;
+        },
     });
 };
 
+// Batch
 const selectedDocs = ref<number[]>([]);
 const showBatchModal = ref(false);
 const batchForm = useForm({ document_ids: [] as number[], passphrase: '' });
 
-// Fitur Select All - HANYA MEMILIH DOKUMEN YANG STATUSNYA PENDING
 const toggleSelectAll = (e: Event) => {
     const checked = (e.target as HTMLInputElement).checked;
     if (checked) {
@@ -95,212 +109,561 @@ const submitBatchSign = () => {
         onSuccess: (page) => {
             if (!page.props.errors || Object.keys(page.props.errors).length === 0) {
                 showBatchModal.value = false;
-                selectedDocs.value = []; 
+                selectedDocs.value = [];
                 batchForm.reset();
             }
-        }
+        },
     });
 };
 
-const getStatusBadge = (status: string) => {
-    switch (status) {
-        case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-        case 'signed': return 'bg-green-100 text-green-800 border-green-200';
-        case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
-        default: return 'bg-slate-100 text-slate-600 border-slate-200';
-    }
-};
-
-const getStatusLabel = (status: string) => {
-    switch (status) {
-        case 'pending': return 'Menunggu TTE';
-        case 'signed': return 'Selesai di-TTE';
-        case 'rejected': return 'Ditolak';
-        default: return status;
-    }
-};
+const statusMeta = (s: string) =>
+    ({
+        pending: {
+            label: 'Menunggu TTE',
+            cls: 'bg-amber-50 text-amber-700 border-amber-200',
+            dot: 'bg-amber-500',
+        },
+        signed: {
+            label: 'Selesai di-TTE',
+            cls: 'bg-[#EAF7F3] text-[#0B7563] border-[#BCE5DA]',
+            dot: 'bg-[#0B8570]',
+        },
+        rejected: {
+            label: 'Ditolak',
+            cls: 'bg-rose-50 text-rose-700 border-rose-200',
+            dot: 'bg-rose-500',
+        },
+    }[s] || {
+        label: s || '—',
+        cls: 'bg-slate-50 text-slate-700 border-slate-200',
+        dot: 'bg-slate-400',
+    });
 </script>
 
 <template>
     <Head title="Permintaan TTE Masuk" />
+
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex items-center gap-4">
-                <Link :href="route('documents.index')" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors">
-                    <ArrowLeft class="w-5 h-5" />
+            <div class="flex items-center gap-3">
+                <Link
+                    :href="route('documents.index')"
+                    class="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#E9F0EE] text-[#6A8593] transition-colors hover:bg-[#F2FBF8] hover:text-[#0B7563]"
+                >
+                    <ArrowLeft class="h-4 w-4" />
                 </Link>
-                <h2 class="font-semibold text-xl text-slate-800 leading-tight flex items-center gap-2">
-                    <Inbox class="w-5 h-5 text-blue-600" />
-                    Permintaan TTE Masuk
-                </h2>
+                <div>
+                    <p
+                        class="text-[11px] font-bold uppercase tracking-[0.16em] text-[#0B7563]"
+                    >
+                        Kotak Masuk
+                    </p>
+                    <h2
+                        class="font-display mt-0.5 flex items-center gap-2 text-xl font-bold leading-tight text-[#0F2A2E]"
+                    >
+                        Permintaan TTE
+                    </h2>
+                </div>
             </div>
         </template>
 
-        <div class="py-8 max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-4">
-            <div v-if="flashSuccess" class="p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center gap-2 shadow-sm font-medium">
-                <CheckCircle2 class="w-5 h-5" />
-                {{ flashSuccess }}
-            </div>
-            
-            <div v-if="selectedDocs.length > 0" class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between shadow-sm">
-                <span class="text-blue-900 font-semibold text-sm">{{ selectedDocs.length }} dokumen terpilih</span>
-                <button @click="showBatchModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition-colors">
-                    TTE Massal Sekarang
-                </button>
+        <div
+            class="mx-auto w-full max-w-8xl space-y-5 px-5 py-8 text-[#0F2A2E] md:px-8"
+        >
+            <!-- Flash -->
+            <div
+                v-if="flashSuccess"
+                class="flex items-start gap-3 rounded-2xl border border-[#BCE5DA] bg-[#EAF7F3] p-4 text-sm text-[#0B7563] shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
+            >
+                <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0" />
+                <span class="font-medium">{{ flashSuccess }}</span>
             </div>
 
-            <!-- FILTER & SEARCH BAR -->
-            <div class="flex flex-col sm:flex-row gap-4 justify-between bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                <div class="w-full sm:w-1/3">
-                    <input type="text" v-model="search" placeholder="Cari nama dokumen atau peminta..." class="w-full rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500">
+            <!-- Batch action bar -->
+            <Transition
+                enter-active-class="ease-out duration-200"
+                enter-from-class="opacity-0 -translate-y-2"
+                enter-to-class="opacity-100 translate-y-0"
+                leave-active-class="ease-in duration-150"
+                leave-from-class="opacity-100 translate-y-0"
+                leave-to-class="opacity-0 -translate-y-2"
+            >
+                <div
+                    v-if="selectedDocs.length > 0"
+                    class="flex flex-col items-start gap-3 rounded-2xl border border-[#BCE5DA] bg-gradient-to-r from-[#EAF7F3] to-[#F2FBF8] p-4 shadow-[0_18px_40px_-32px_rgba(11,133,112,.4)] sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <div class="flex items-center gap-3">
+                        <span
+                            class="grid h-9 w-9 place-items-center rounded-lg bg-[#0B8570] text-white"
+                        >
+                            <Layers class="h-4 w-4" />
+                        </span>
+                        <div>
+                            <p class="text-sm font-bold text-[#0F2A2E]">
+                                {{ selectedDocs.length }} dokumen terpilih
+                            </p>
+                            <p class="text-[11px] text-[#6A8593]">
+                                Siap untuk ditandatangani massal (Invisible)
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        @click="showBatchModal = true"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B] sm:w-auto"
+                    >
+                        <PenLine class="h-4 w-4" />
+                        TTE Massal Sekarang
+                    </button>
                 </div>
-                <div class="flex gap-2 w-full sm:w-auto">
-                    <select v-model="dateFilter" class="rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Semua Waktu</option>
-                        <option value="today">Hari Ini</option>
-                        <option value="week">Minggu Ini</option>
-                        <option value="month">Bulan Ini</option>
-                    </select>
+            </Transition>
 
-                    <select v-model="statusFilter" class="rounded-lg border-slate-300 text-sm focus:ring-blue-500 focus:border-blue-500">
-                        <option value="all">Semua Status</option>
-                        <option value="pending">Menunggu TTE</option>
-                        <option value="signed">Sudah di-TTE</option>
-                        <option value="rejected">Ditolak</option>
-                    </select>
+            <!-- Filter bar -->
+            <div
+                class="rounded-2xl border border-[#DCE8E5] bg-white p-4 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
+            >
+                <div class="flex flex-col gap-3 lg:flex-row">
+                    <!-- Search -->
+                    <div class="relative flex-1">
+                        <Search
+                            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                        />
+                        <input
+                            v-model="search"
+                            type="text"
+                            placeholder="Cari nama dokumen atau peminta..."
+                            class="w-full rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] py-2.5 pl-9 pr-3 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-0"
+                        />
+                    </div>
+
+                    <!-- Date -->
+                    <div class="relative lg:w-52">
+                        <Calendar
+                            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                        />
+                        <select
+                            v-model="dateFilter"
+                            class="w-full appearance-none rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] py-2.5 pl-9 pr-8 text-sm text-[#0F2A2E] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-0"
+                        >
+                            <option value="">Semua Waktu</option>
+                            <option value="today">Hari Ini</option>
+                            <option value="week">Minggu Ini</option>
+                            <option value="month">Bulan Ini</option>
+                        </select>
+                        <ChevronDown
+                            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                        />
+                    </div>
+
+                    <!-- Status -->
+                    <div class="relative lg:w-52">
+                        <Filter
+                            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                        />
+                        <select
+                            v-model="statusFilter"
+                            class="w-full appearance-none rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] py-2.5 pl-9 pr-8 text-sm text-[#0F2A2E] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-0"
+                        >
+                            <option value="all">Semua Status</option>
+                            <option value="pending">Menunggu TTE</option>
+                            <option value="signed">Sudah di-TTE</option>
+                            <option value="rejected">Ditolak</option>
+                        </select>
+                        <ChevronDown
+                            class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                        />
+                    </div>
                 </div>
             </div>
 
-            <!-- Tabel Permintaan -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-2xl border border-slate-200 pb-4">
+            <!-- Table card -->
+            <div
+                class="overflow-hidden rounded-2xl border border-[#DCE8E5] bg-white shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
+            >
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left w-12">
-                                    <input type="checkbox" @change="toggleSelectAll" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="border-b border-[#E9F0EE] bg-[#F8FCFB]">
+                                <th class="w-12 px-6 py-3 text-left">
+                                    <input
+                                        type="checkbox"
+                                        @change="toggleSelectAll"
+                                        class="h-4 w-4 cursor-pointer rounded border-[#D9E6E3] text-[#0B8570] focus:ring-2 focus:ring-[#0B8570]/20"
+                                    />
                                 </th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Dokumen</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Diminta Oleh</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Waktu Permintaan</th>
-                                <th class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase">Status</th>
-                                <th class="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase">Aksi</th>
+                                <th
+                                    class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                                >
+                                    Dokumen
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                                >
+                                    Diminta Oleh
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                                >
+                                    Waktu
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-center text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                                >
+                                    Status
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                                >
+                                    Aksi
+                                </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-200 bg-white">
+                        <tbody class="divide-y divide-[#EEF4F2]">
+                            <!-- Empty -->
                             <tr v-if="incomingRequests.data.length === 0">
-                                <td colspan="6" class="px-6 py-12 text-center text-slate-500">
-                                    <Inbox class="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                                    <p class="text-sm font-medium">Tidak ada dokumen yang ditemukan.</p>
-                                    <p class="text-xs mt-1">Coba sesuaikan filter atau pencarian Anda.</p>
-                                </td>
-                            </tr>
-                            <tr v-for="req in incomingRequests.data" :key="req.id" class="hover:bg-slate-50 transition-colors">
-                                <td class="px-6 py-4">
-                                    <!-- Hanya tampilkan checkbox jika status masih pending -->
-                                    <input v-if="req.status === 'pending'" type="checkbox" :value="req.document.id" v-model="selectedDocs" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                            <FileText class="w-5 h-5" />
+                                <td colspan="6" class="px-6 py-16 text-center">
+                                    <div
+                                        class="flex flex-col items-center gap-3"
+                                    >
+                                        <div
+                                            class="grid h-14 w-14 place-items-center rounded-2xl bg-[#EAF7F3]"
+                                        >
+                                            <Inbox class="h-7 w-7 text-[#0B7563]" />
                                         </div>
                                         <div>
-                                            <p class="text-sm font-bold text-slate-900">{{ req.document.title }}</p>
-                                            <p class="text-xs text-slate-500">Pemilik: {{ req.document.owner.name }}</p>
+                                            <p
+                                                class="font-display text-sm font-bold text-[#0F2A2E]"
+                                            >
+                                                Tidak ada permintaan ditemukan
+                                            </p>
+                                            <p
+                                                class="mt-1 text-xs text-[#6A8593]"
+                                            >
+                                                Sesuaikan filter atau kata kunci
+                                                pencarian Anda.
+                                            </p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-sm font-medium text-slate-700">
+                            </tr>
+
+                            <!-- Rows -->
+                            <tr
+                                v-for="req in incomingRequests.data"
+                                :key="req.id"
+                                :class="
+                                    selectedDocs.includes(req.document.id)
+                                        ? 'bg-[#F2FBF8]'
+                                        : ''
+                                "
+                                class="transition-colors hover:bg-[#F8FCFB]"
+                            >
+                                <td class="px-6 py-4 align-top">
+                                    <input
+                                        v-if="req.status === 'pending'"
+                                        type="checkbox"
+                                        :value="req.document.id"
+                                        v-model="selectedDocs"
+                                        class="h-4 w-4 cursor-pointer rounded border-[#D9E6E3] text-[#0B8570] focus:ring-2 focus:ring-[#0B8570]/20"
+                                    />
+                                </td>
+                                <td class="px-6 py-4 align-top">
+                                    <div class="flex items-start gap-3">
+                                        <span
+                                            class="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#EAF7F3] text-[#0B7563]"
+                                        >
+                                            <FileText class="h-4 w-4" />
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p
+                                                class="truncate text-sm font-semibold text-[#0F2A2E]"
+                                                :title="req.document.title"
+                                            >
+                                                {{ req.document.title }}
+                                            </p>
+                                            <p
+                                                class="mt-0.5 text-[11px] text-[#6A8593]"
+                                            >
+                                                Pemilik:
+                                                <span
+                                                    class="font-medium text-[#4A6572]"
+                                                >
+                                                    {{ req.document.owner.name }}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td
+                                    class="px-6 py-4 align-top text-sm font-medium text-[#4A6572]"
+                                >
                                     {{ req.requester.name }}
                                 </td>
-                                <td class="px-6 py-4 text-sm text-slate-500">
+                                <td
+                                    class="whitespace-nowrap px-6 py-4 align-top text-xs text-[#6A8593]"
+                                >
                                     {{ formatDate(req.created_at) }}
                                 </td>
-                                <td class="px-6 py-4 text-center whitespace-nowrap">
-                                    <span :class="getStatusBadge(req.status)" class="px-2.5 py-1 text-xs font-bold rounded-md border inline-flex items-center gap-1">
-                                        {{ getStatusLabel(req.status) }}
+                                <td
+                                    class="whitespace-nowrap px-6 py-4 text-center align-top"
+                                >
+                                    <span
+                                        :class="statusMeta(req.status).cls"
+                                        class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold"
+                                    >
+                                        <span
+                                            class="h-1.5 w-1.5 rounded-full"
+                                            :class="statusMeta(req.status).dot"
+                                        />
+                                        {{ statusMeta(req.status).label }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-right space-x-2">
-                                    <Link :href="route('documents.show', req.document.id)" class="text-slate-600 hover:text-blue-600 text-sm font-medium">
-                                        Detail
-                                    </Link>
-                                    
-                                    <!-- Tombol TTE & Tolak hanya muncul jika status masih pending -->
-                                    <template v-if="req.status === 'pending'">
-                                        <button @click="openRejectModal(req)" class="inline-flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-red-100 border border-red-200 transition-colors">
-                                            Tolak
-                                        </button>
-                                        <button @click="openSignModal(req)" class="inline-flex items-center gap-1 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm transition-colors">
-                                            <PenTool class="w-4 h-4" /> TTE Sekarang
-                                        </button>
-                                    </template>
+                                <td
+                                    class="whitespace-nowrap px-6 py-4 text-right align-top"
+                                >
+                                    <div
+                                        class="flex items-center justify-end gap-1"
+                                    >
+                                        <Link
+                                            :href="
+                                                route(
+                                                    'documents.show',
+                                                    req.document.id
+                                                )
+                                            "
+                                            class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#4A6572] transition-colors hover:bg-[#EEF4F2] hover:text-[#0F2A2E]"
+                                        >
+                                            Detail
+                                        </Link>
+
+                                        <template v-if="req.status === 'pending'">
+                                            <button
+                                                type="button"
+                                                @click="openRejectModal(req)"
+                                                class="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-100"
+                                            >
+                                                <XCircle class="h-3.5 w-3.5" />
+                                                Tolak
+                                            </button>
+                                            <button
+                                                type="button"
+                                                @click="openSignModal(req)"
+                                                class="inline-flex items-center gap-1 rounded-lg bg-[#0B8570] px-2.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#086B5B]"
+                                            >
+                                                <PenLine class="h-3.5 w-3.5" />
+                                                TTE Sekarang
+                                            </button>
+                                        </template>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                <!-- PAGINATION -->
-                <div v-if="incomingRequests.links && incomingRequests.links.length > 3" class="mt-6 flex justify-center">
-                    <div class="flex flex-wrap gap-1">
-                        <template v-for="(link, k) in incomingRequests.links" :key="k">
-                            <div v-if="link.url === null" class="px-3 py-1.5 text-sm text-slate-400 border border-slate-200 rounded-lg bg-slate-50" v-html="link.label"></div>
-                            <Link v-else :href="link.url" :class="link.active ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'" class="px-3 py-1.5 text-sm border rounded-lg transition-colors shadow-sm" v-html="link.label" preserve-scroll />
-                        </template>
-                    </div>
+            <!-- Pagination -->
+            <div
+                v-if="
+                    incomingRequests.links && incomingRequests.links.length > 3
+                "
+                class="flex justify-center pt-2"
+            >
+                <div
+                    class="inline-flex items-center gap-1 rounded-xl border border-[#DCE8E5] bg-white p-1 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
+                >
+                    <template v-for="(link, k) in incomingRequests.links" :key="k">
+                        <div
+                            v-if="link.url === null"
+                            class="cursor-not-allowed rounded-lg px-3 py-1.5 text-xs font-semibold text-[#A8BCC2]"
+                            v-html="link.label"
+                        />
+                        <Link
+                            v-else
+                            :href="link.url"
+                            preserve-scroll
+                            :class="
+                                link.active
+                                    ? 'bg-[#0B8570] text-white'
+                                    : 'text-[#4A6572] hover:bg-[#F2FBF8] hover:text-[#0B7563]'
+                            "
+                            class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
+                            v-html="link.label"
+                        />
+                    </template>
                 </div>
             </div>
         </div>
 
-        <TteProcessModal v-if="activeDoc" v-model:show="showSignModal" :document="activeDoc" :specimen-path="auth.user.specimen_path" />
+        <!-- TTE Modal -->
+        <TteProcessModal
+            v-if="activeDoc"
+            v-model:show="showSignModal"
+            :document="activeDoc"
+            :specimen-path="auth.user.specimen_path"
+        />
 
-        <!-- MODAL TOLAK TTE -->
-        <div v-if="showRejectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-                <h3 class="text-lg font-bold text-red-600 mb-2">Tolak Permintaan TTE</h3>
-                <p class="text-sm text-slate-500 mb-4">
-                    Anda akan mengembalikan dokumen <strong>{{ requestToReject?.document.title }}</strong>. Silakan berikan alasan penolakan agar staf dapat memperbaikinya.
+        <!-- Reject Modal -->
+        <Modal :show="showRejectModal" max-width="md" @close="showRejectModal = false">
+            <div class="p-6">
+                <div class="flex items-start gap-3">
+                    <span
+                        class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-600"
+                    >
+                        <AlertTriangle class="h-5 w-5" />
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="font-display text-lg font-bold text-[#0F2A2E]">
+                            Tolak Permintaan TTE
+                        </h3>
+                        <p class="mt-0.5 truncate text-xs text-[#6A8593]">
+                            {{ requestToReject?.document.title }}
+                        </p>
+                    </div>
+                </div>
+
+                <p class="mt-5 text-sm leading-relaxed text-[#4A6572]">
+                    Dokumen akan dikembalikan ke staf pengunggah. Mohon berikan alasan
+                    yang jelas agar dapat diperbaiki.
                 </p>
-                <form @submit.prevent="submitReject" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700">Alasan Penolakan</label>
-                        <textarea v-model="rejectForm.reason" required rows="3" class="mt-1 block w-full rounded-lg border-slate-300 shadow-sm focus:ring-red-500 focus:border-red-500 text-sm" placeholder="Contoh: Ada salah ketik pada nominal angka..."></textarea>
-                    </div>
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" @click="showRejectModal = false" class="px-4 py-2 bg-slate-100 rounded-lg text-sm font-medium hover:bg-slate-200">Batal</button>
-                        <button type="submit" :disabled="rejectForm.processing" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">Kirim Penolakan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
-        <!-- MODAL BATCH SIGN -->
-        <div v-if="showBatchModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-                <h3 class="text-lg font-bold text-slate-900 mb-2">TTE Massal (Invisible)</h3>
-                <p class="text-sm text-slate-500 mb-4">Anda akan menandatangani <strong>{{ selectedDocs.length }} dokumen</strong> sekaligus. Mode yang digunakan adalah Invisible (Tanpa visual spesimen pada PDF).</p>
-                <div v-if="errorMessage" class="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200">{{ errorMessage }}</div>
-                <div v-if="Object.keys(batchForm.errors).length > 0" class="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200">
-                    <ul class="list-disc pl-4">
-                        <li v-for="(error, key) in batchForm.errors" :key="key">{{ error }}</li>
-                    </ul>
-                </div>
-
-                <form @submit.prevent="submitBatchSign" class="space-y-4">
+                <form @submit.prevent="submitReject" class="mt-4 space-y-4">
                     <div>
-                        <label class="block text-sm font-medium">Passphrase BSrE</label>
-                        <input type="password" v-model="batchForm.passphrase" required class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm" placeholder="Masukkan Passphrase" />
+                        <label
+                            class="block text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                        >
+                            Alasan Penolakan
+                        </label>
+                        <textarea
+                            v-model="rejectForm.reason"
+                            required
+                            rows="3"
+                            placeholder="Contoh: Ada salah ketik pada nominal angka…"
+                            class="mt-1.5 block w-full resize-none rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] px-3.5 py-2.5 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] focus:border-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-500/10"
+                        />
+                        <p
+                            v-if="rejectForm.errors.reason"
+                            class="mt-1 text-xs text-rose-600"
+                        >
+                            {{ rejectForm.errors.reason }}
+                        </p>
                     </div>
-                    <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                        <button type="button" @click="showBatchModal = false" class="px-4 py-2 bg-slate-100 rounded-lg text-sm font-medium">Batal</button>
-                        <button type="submit" :disabled="batchForm.processing" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-                            {{ batchForm.processing ? 'Memproses...' : 'Proses Semua' }}
+
+                    <div class="flex justify-end gap-2 border-t border-[#EEF4F2] pt-4">
+                        <button
+                            type="button"
+                            @click="showRejectModal = false"
+                            class="rounded-xl border border-[#D9E6E3] bg-white px-4 py-2 text-sm font-semibold text-[#4A6572] transition-colors hover:bg-[#F2FBF8]"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="rejectForm.processing"
+                            class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(225,29,72,.5)] transition-all hover:-translate-y-0.5 hover:bg-rose-700 disabled:opacity-50 disabled:hover:translate-y-0"
+                        >
+                            {{
+                                rejectForm.processing
+                                    ? 'Mengirim…'
+                                    : 'Kirim Penolakan'
+                            }}
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
+        </Modal>
+
+        <!-- Batch Sign Modal -->
+        <Modal :show="showBatchModal" max-width="md" @close="showBatchModal = false">
+            <div class="p-6">
+                <div class="flex items-start gap-3">
+                    <span
+                        class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#EAF7F3] text-[#0B7563]"
+                    >
+                        <Layers class="h-5 w-5" />
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="font-display text-lg font-bold text-[#0F2A2E]">
+                            TTE Massal
+                        </h3>
+                        <p class="mt-0.5 text-xs text-[#6A8593]">
+                            Mode Invisible — tanpa visual spesimen
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    class="mt-5 rounded-xl border border-[#E9F0EE] bg-[#F8FCFB] p-3.5 text-sm"
+                >
+                    <p class="text-[#4A6572]">
+                        Anda akan menandatangani
+                        <span class="font-bold text-[#0F2A2E]">
+                            {{ selectedDocs.length }} dokumen
+                        </span>
+                        sekaligus.
+                    </p>
+                </div>
+
+                <div
+                    v-if="errorMessage"
+                    class="mt-4 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+                >
+                    <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
+                    <span class="font-medium">{{ errorMessage }}</span>
+                </div>
+
+                <div
+                    v-if="Object.keys(batchForm.errors).length > 0"
+                    class="mt-4 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+                >
+                    <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
+                    <ul class="list-inside list-disc space-y-0.5 font-medium">
+                        <li v-for="(error, key) in batchForm.errors" :key="key">
+                            {{ error }}
+                        </li>
+                    </ul>
+                </div>
+
+                <form @submit.prevent="submitBatchSign" class="mt-5 space-y-4">
+                    <div>
+                        <label
+                            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                        >
+                            <KeyRound class="h-3.5 w-3.5" />
+                            Passphrase BSrE
+                        </label>
+                        <input
+                            type="password"
+                            v-model="batchForm.passphrase"
+                            required
+                            placeholder="••••••••"
+                            autocomplete="off"
+                            class="mt-1.5 block w-full rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] px-3.5 py-2.5 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
+                        />
+                    </div>
+
+                    <div class="flex justify-end gap-2 border-t border-[#EEF4F2] pt-4">
+                        <button
+                            type="button"
+                            @click="showBatchModal = false"
+                            class="rounded-xl border border-[#D9E6E3] bg-white px-4 py-2 text-sm font-semibold text-[#4A6572] transition-colors hover:bg-[#F2FBF8]"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="batchForm.processing"
+                            class="rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B] disabled:opacity-50 disabled:hover:translate-y-0"
+                        >
+                            {{
+                                batchForm.processing
+                                    ? 'Memproses…'
+                                    : 'Proses Semua'
+                            }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
     </AuthenticatedLayout>
 </template>

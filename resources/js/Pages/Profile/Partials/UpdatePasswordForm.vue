@@ -1,13 +1,23 @@
 <script setup lang="ts">
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import {
+    Lock,
+    KeyRound,
+    Eye,
+    EyeOff,
+    CheckCircle2,
+    AlertCircle,
+    ShieldCheck,
+    ShieldAlert,
+} from 'lucide-vue-next';
 
-const passwordInput = ref<HTMLInputElement | null>(null);
 const currentPasswordInput = ref<HTMLInputElement | null>(null);
+const passwordInput = ref<HTMLInputElement | null>(null);
+
+const showCurrent = ref(false);
+const showNew = ref(false);
+const showConfirm = ref(false);
 
 const form = useForm({
     current_password: '',
@@ -20,6 +30,9 @@ const updatePassword = () => {
         preserveScroll: true,
         onSuccess: () => {
             form.reset();
+            showCurrent.value = false;
+            showNew.value = false;
+            showConfirm.value = false;
         },
         onError: () => {
             if (form.errors.password) {
@@ -33,89 +46,252 @@ const updatePassword = () => {
         },
     });
 };
+
+// Password strength meter
+const passwordStrength = computed(() => {
+    const p = form.password;
+    if (!p) return { score: 0, label: '', cls: '', barCls: '' };
+
+    let score = 0;
+    if (p.length >= 8) score++;
+    if (/[a-z]/.test(p) && /[A-Z]/.test(p)) score++;
+    if (/\d/.test(p)) score++;
+    if (/[^A-Za-z0-9]/.test(p)) score++;
+
+    const map: Record<number, { label: string; cls: string; barCls: string }> = {
+        1: {
+            label: 'Lemah',
+            cls: 'text-rose-600',
+            barCls: 'bg-rose-500',
+        },
+        2: {
+            label: 'Cukup',
+            cls: 'text-amber-600',
+            barCls: 'bg-amber-500',
+        },
+        3: {
+            label: 'Kuat',
+            cls: 'text-[#0B7563]',
+            barCls: 'bg-[#0B8570]',
+        },
+        4: {
+            label: 'Sangat Kuat',
+            cls: 'text-[#0B7563]',
+            barCls: 'bg-[#0B8570]',
+        },
+    };
+
+    return { score, ...(map[score] || map[1]) };
+});
+
+// Confirm match
+const confirmMatches = computed(
+    () =>
+        form.password_confirmation.length > 0 &&
+        form.password === form.password_confirmation
+);
 </script>
 
 <template>
     <section>
-        <header>
-            <h2 class="text-lg font-medium text-gray-900">
-                Update Password
-            </h2>
-
-            <p class="mt-1 text-sm text-gray-600">
-                Ensure your account is using a long, random password to stay
-                secure.
-            </p>
-        </header>
-
-        <form @submit.prevent="updatePassword" class="mt-6 space-y-6">
+        <form @submit.prevent="updatePassword" class="space-y-5">
+            <!-- ============ Current Password ============ -->
             <div>
-                <InputLabel for="current_password" value="Current Password" />
-
-                <TextInput
-                    id="current_password"
-                    ref="currentPasswordInput"
-                    v-model="form.current_password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    autocomplete="current-password"
-                />
-
-                <InputError
-                    :message="form.errors.current_password"
-                    class="mt-2"
-                />
+                <label
+                    for="current_password"
+                    class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                >
+                    <Lock class="h-3.5 w-3.5" />
+                    Password Saat Ini
+                </label>
+                <div class="relative mt-1.5">
+                    <input
+                        id="current_password"
+                        ref="currentPasswordInput"
+                        v-model="form.current_password"
+                        :type="showCurrent ? 'text' : 'password'"
+                        autocomplete="current-password"
+                        placeholder="••••••••"
+                        class="block w-full rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] px-3.5 py-2.5 pr-11 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
+                    />
+                    <button
+                        type="button"
+                        @click="showCurrent = !showCurrent"
+                        class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-[#6A8593] transition-colors hover:bg-[#F2FBF8] hover:text-[#0B7563]"
+                        :aria-label="
+                            showCurrent ? 'Sembunyikan password' : 'Tampilkan password'
+                        "
+                    >
+                        <Eye v-if="!showCurrent" class="h-4 w-4" />
+                        <EyeOff v-else class="h-4 w-4" />
+                    </button>
+                </div>
+                <p
+                    v-if="form.errors.current_password"
+                    class="mt-1.5 flex items-center gap-1 text-xs text-rose-600"
+                >
+                    <AlertCircle class="h-3 w-3" />
+                    {{ form.errors.current_password }}
+                </p>
             </div>
 
+            <!-- ============ New Password ============ -->
             <div>
-                <InputLabel for="password" value="New Password" />
+                <label
+                    for="password"
+                    class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                >
+                    <KeyRound class="h-3.5 w-3.5" />
+                    Password Baru
+                </label>
+                <div class="relative mt-1.5">
+                    <input
+                        id="password"
+                        ref="passwordInput"
+                        v-model="form.password"
+                        :type="showNew ? 'text' : 'password'"
+                        autocomplete="new-password"
+                        placeholder="••••••••"
+                        class="block w-full rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] px-3.5 py-2.5 pr-11 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
+                    />
+                    <button
+                        type="button"
+                        @click="showNew = !showNew"
+                        class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-[#6A8593] transition-colors hover:bg-[#F2FBF8] hover:text-[#0B7563]"
+                        :aria-label="
+                            showNew ? 'Sembunyikan password' : 'Tampilkan password'
+                        "
+                    >
+                        <Eye v-if="!showNew" class="h-4 w-4" />
+                        <EyeOff v-else class="h-4 w-4" />
+                    </button>
+                </div>
 
-                <TextInput
-                    id="password"
-                    ref="passwordInput"
-                    v-model="form.password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    autocomplete="new-password"
-                />
+                <!-- Strength meter -->
+                <Transition
+                    enter-active-class="transition ease-out duration-200"
+                    enter-from-class="opacity-0 -translate-y-1"
+                    enter-to-class="opacity-100 translate-y-0"
+                >
+                    <div v-if="form.password" class="mt-2">
+                        <div class="flex gap-1">
+                            <span
+                                v-for="i in 4"
+                                :key="i"
+                                class="h-1 flex-1 rounded-full transition-colors"
+                                :class="
+                                    i <= passwordStrength.score
+                                        ? passwordStrength.barCls
+                                        : 'bg-[#E9F0EE]'
+                                "
+                            />
+                        </div>
+                        <p
+                            class="mt-1.5 text-[11px] font-semibold"
+                            :class="passwordStrength.cls"
+                        >
+                            Kekuatan: {{ passwordStrength.label }}
+                        </p>
+                    </div>
+                </Transition>
 
-                <InputError :message="form.errors.password" class="mt-2" />
+                <p
+                    v-if="form.errors.password"
+                    class="mt-1.5 flex items-center gap-1 text-xs text-rose-600"
+                >
+                    <AlertCircle class="h-3 w-3" />
+                    {{ form.errors.password }}
+                </p>
             </div>
 
+            <!-- ============ Confirm ============ -->
             <div>
-                <InputLabel
+                <label
                     for="password_confirmation"
-                    value="Confirm Password"
-                />
-
-                <TextInput
-                    id="password_confirmation"
-                    v-model="form.password_confirmation"
-                    type="password"
-                    class="mt-1 block w-full"
-                    autocomplete="new-password"
-                />
-
-                <InputError
-                    :message="form.errors.password_confirmation"
-                    class="mt-2"
-                />
-            </div>
-
-            <div class="flex items-center gap-4">
-                <PrimaryButton :disabled="form.processing">Save</PrimaryButton>
+                    class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                >
+                    <ShieldCheck class="h-3.5 w-3.5" />
+                    Konfirmasi Password Baru
+                </label>
+                <div class="relative mt-1.5">
+                    <input
+                        id="password_confirmation"
+                        v-model="form.password_confirmation"
+                        :type="showConfirm ? 'text' : 'password'"
+                        autocomplete="new-password"
+                        placeholder="••••••••"
+                        class="block w-full rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] px-3.5 py-2.5 pr-11 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
+                    />
+                    <button
+                        type="button"
+                        @click="showConfirm = !showConfirm"
+                        class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-[#6A8593] transition-colors hover:bg-[#F2FBF8] hover:text-[#0B7563]"
+                        :aria-label="
+                            showConfirm
+                                ? 'Sembunyikan password'
+                                : 'Tampilkan password'
+                        "
+                    >
+                        <Eye v-if="!showConfirm" class="h-4 w-4" />
+                        <EyeOff v-else class="h-4 w-4" />
+                    </button>
+                </div>
 
                 <Transition
-                    enter-active-class="transition ease-in-out"
-                    enter-from-class="opacity-0"
-                    leave-active-class="transition ease-in-out"
+                    enter-active-class="transition ease-out duration-200"
+                    enter-from-class="opacity-0 -translate-y-1"
+                    enter-to-class="opacity-100 translate-y-0"
+                >
+                    <p
+                        v-if="form.password_confirmation"
+                        class="mt-1.5 flex items-center gap-1 text-[11px] font-semibold"
+                        :class="
+                            confirmMatches ? 'text-[#0B7563]' : 'text-rose-600'
+                        "
+                    >
+                        <CheckCircle2 v-if="confirmMatches" class="h-3 w-3" />
+                        <ShieldAlert v-else class="h-3 w-3" />
+                        {{
+                            confirmMatches
+                                ? 'Password cocok'
+                                : 'Password belum cocok'
+                        }}
+                    </p>
+                </Transition>
+
+                <p
+                    v-if="form.errors.password_confirmation"
+                    class="mt-1.5 flex items-center gap-1 text-xs text-rose-600"
+                >
+                    <AlertCircle class="h-3 w-3" />
+                    {{ form.errors.password_confirmation }}
+                </p>
+            </div>
+
+            <!-- ============ Actions ============ -->
+            <div
+                class="flex flex-wrap items-center gap-3 border-t border-[#EEF4F2] pt-4"
+            >
+                <button
+                    type="submit"
+                    :disabled="form.processing"
+                    class="inline-flex items-center gap-2 rounded-xl bg-[#0B8570] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                >
+                    {{ form.processing ? 'Menyimpan…' : 'Perbarui Password' }}
+                </button>
+
+                <Transition
+                    enter-active-class="transition ease-out duration-200"
+                    enter-from-class="opacity-0 translate-x-2"
+                    leave-active-class="transition ease-in duration-150"
                     leave-to-class="opacity-0"
                 >
                     <p
                         v-if="form.recentlySuccessful"
-                        class="text-sm text-gray-600"
+                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0B7563]"
                     >
-                        Saved.
+                        <CheckCircle2 class="h-3.5 w-3.5" />
+                        Password diperbarui
                     </p>
                 </Transition>
             </div>

@@ -10,14 +10,29 @@ class TteHistoryController extends Controller
 {
     public function index(Request $request)
     {
-        // Ambil histori milik user, urutkan dari yang terbaru, beserta relasi dokumennya
         $histories = TteHistory::with('document:id,title')
             ->where('user_id', $request->user()->id)
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $q->whereHas('document', function ($qq) use ($request) {
+                    $qq->where('title', 'like', '%' . $request->search . '%');
+                });
+            })
+            ->when($request->filled('status'), function ($q) use ($request) {
+                $q->where('status', $request->status);
+            })
+            ->when($request->filled('date_from'), function ($q) use ($request) {
+                $q->whereDate('created_at', '>=', $request->date_from);
+            })
+            ->when($request->filled('date_to'), function ($q) use ($request) {
+                $q->whereDate('created_at', '<=', $request->date_to);
+            })
             ->latest()
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
         return Inertia::render('Histories/Index', [
-            'histories' => $histories
+            'histories' => $histories,
+            'filters'   => $request->only(['search', 'status', 'date_from', 'date_to']),
         ]);
     }
 

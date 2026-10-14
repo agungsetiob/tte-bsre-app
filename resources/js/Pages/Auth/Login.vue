@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import Checkbox from '@/Components/Checkbox.vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import {
+    Mail,
+    Lock,
+    ShieldCheck,
+    ArrowRight,
+    ScanLine,
+    FileSignature,
+    QrCode,
+    AlertCircle,
+    Eye,
+    EyeOff,
+} from 'lucide-vue-next';
+import { ref } from 'vue';
 
 defineProps<{
     canResetPassword?: boolean;
@@ -18,6 +25,8 @@ const form = useForm({
     remember: false,
 });
 
+const showPassword = ref(false);
+
 const submit = () => {
     form.post(route('login'), {
         onFinish: () => {
@@ -28,71 +37,298 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Log in" />
+    <Head title="Masuk — HELODOCS" />
 
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
-            {{ status }}
-        </div>
+    <div class="grid min-h-screen bg-[#F8FCFB] font-sans text-[#0F2A2E] lg:grid-cols-[1.1fr_1fr]">
+        <!-- ============ LEFT : BRAND PANEL ============ -->
+        <aside
+            class="relative hidden overflow-hidden bg-gradient-to-br from-[#0F2A2E] via-[#0B7563] to-[#0B8570] p-10 lg:flex lg:flex-col lg:justify-between xl:p-14"
+        >
+            <!-- decorative overlay -->
+            <div
+                class="pointer-events-none absolute inset-0 opacity-[0.35]"
+                style="
+                    background-image:
+                        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 45%),
+                        radial-gradient(circle at 80% 80%, rgba(226, 154, 45, 0.18), transparent 50%),
+                        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 88px),
+                        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 88px);
+                "
+            />
 
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
+            <!-- halo glow -->
+            <div
+                class="pointer-events-none absolute -right-24 top-1/3 h-96 w-96 rounded-full bg-[#0B8570] opacity-40 blur-3xl"
+            />
 
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
+            <!-- top : logo -->
+            <div class="relative z-10">
+                <img
+                    src="/logo.png"
+                    alt="HELODOCS"
+                    class="h-14 w-auto brightness-0 invert xl:h-20"
                 />
-
-                <InputError class="mt-2" :message="form.errors.email" />
+                <p
+                    class="mt-4 max-w-sm text-sm leading-relaxed text-white/70"
+                >
+                    Platform Tanda Tangan & Verifikasi Dokumen Elektronik Rumah Sakit.
+                </p>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
-
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="current-password"
-                />
-
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
-
-            <div class="mt-4 block">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
+            <!-- middle : value props -->
+            <div class="relative z-10 space-y-5">
+                <div class="flex items-start gap-3.5">
+                    <span
+                        class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white backdrop-blur"
                     >
-                </label>
+                        <FileSignature class="h-5 w-5" />
+                    </span>
+                    <div>
+                        <p class="font-display text-sm font-bold text-white">
+                            Tanda tangan sah
+                        </p>
+                        <p class="mt-0.5 text-xs leading-relaxed text-white/65">
+                            Sertifikat elektronik BSrE BSSN yang diakui secara hukum.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3.5">
+                    <span
+                        class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white backdrop-blur"
+                    >
+                        <QrCode class="h-5 w-5" />
+                    </span>
+                    <div>
+                        <p class="font-display text-sm font-bold text-white">
+                            Verifikasi instan
+                        </p>
+                        <p class="mt-0.5 text-xs leading-relaxed text-white/65">
+                            Cek keaslian dokumen lewat scan QR dalam hitungan detik.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3.5">
+                    <span
+                        class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white backdrop-blur"
+                    >
+                        <ShieldCheck class="h-5 w-5" />
+                    </span>
+                    <div>
+                        <p class="font-display text-sm font-bold text-white">
+                            Aman & terintegrasi
+                        </p>
+                        <p class="mt-0.5 text-xs leading-relaxed text-white/65">
+                            Seluruh alur dokumen tercatat rapi dan dapat diaudit.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div class="mt-4 flex items-center justify-end">
-                <Link
-                    v-if="canResetPassword"
-                    :href="route('password.request')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            <!-- bottom : BSrE badge -->
+            <div class="relative z-10">
+                <div
+                    class="flex items-center gap-4 rounded-2xl border border-white/12 bg-white/[0.06] p-4 backdrop-blur-sm"
                 >
-                    Forgot your password?
-                </Link>
+                    <div class="shrink-0 rounded-xl bg-white/95 p-2.5">
+                        <img
+                            src="/bsre-logo.png"
+                            alt="Balai Sertifikasi Elektronik (BSrE) — BSSN"
+                            class="h-9 w-auto"
+                        />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/90">
+                            <ShieldCheck class="h-3.5 w-3.5 text-[#E29A2D]" />
+                            Terintegrasi Resmi
+                        </p>
+                        <p class="mt-0.5 text-xs leading-relaxed text-white/60">
+                            Balai Sertifikasi Elektronik — BSSN
+                        </p>
+                    </div>
+                </div>
 
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Log in
-                </PrimaryButton>
+                <p class="mt-6 text-[11px] text-white/40">
+                    &copy; {{ new Date().getFullYear() }} RSUD dr. H. Andi Abdurrahman Noor
+                </p>
             </div>
-        </form>
-    </GuestLayout>
+        </aside>
+
+        <!-- ============ RIGHT : FORM PANEL ============ -->
+        <main class="relative flex items-center justify-center px-5 py-10 sm:px-8 lg:px-10">
+            <!-- mobile logo -->
+            <div class="absolute inset-x-0 top-0 flex items-center justify-center py-5 lg:hidden">
+                <img src="/logo.png" alt="HELODOCS" class="h-10 w-auto" />
+            </div>
+
+            <div class="w-full max-w-md">
+                <!-- Heading -->
+                <div class="mb-8 mt-16 lg:mt-0">
+                    <span
+                        class="inline-flex items-center gap-1.5 rounded-full border border-[#BCE5DA] bg-[#EAF7F3] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0B7563]"
+                    >
+                        <ShieldCheck class="h-3.5 w-3.5" />
+                        Ruang Pengelola
+                    </span>
+                    <h1
+                        class="font-display mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#0F2A2E] sm:text-[2rem]"
+                    >
+                        Selamat datang kembali.
+                    </h1>
+                    <p class="mt-2 text-sm text-[#4A6572]">
+                        Masuk untuk mengelola, menandatangani, dan memverifikasi dokumen
+                        rumah sakit.
+                    </p>
+                </div>
+
+                <!-- Status message -->
+                <div
+                    v-if="status"
+                    class="mb-5 flex items-start gap-2.5 rounded-xl border border-[#BCE5DA] bg-[#EAF7F3] p-3 text-sm font-medium text-[#0B7563]"
+                >
+                    <ShieldCheck class="mt-0.5 h-4 w-4 shrink-0" />
+                    {{ status }}
+                </div>
+
+                <!-- Form -->
+                <form @submit.prevent="submit" class="space-y-5">
+                    <!-- Email -->
+                    <div>
+                        <label
+                            for="email"
+                            class="text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                        >
+                            Email
+                        </label>
+                        <div class="relative mt-2">
+                            <Mail
+                                class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                            />
+                            <input
+                                id="email"
+                                type="email"
+                                v-model="form.email"
+                                required
+                                autofocus
+                                autocomplete="username"
+                                placeholder="nama@rsud.go.id"
+                                class="block w-full rounded-xl border border-[#D9E6E3] bg-white py-2.5 pl-10 pr-3 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
+                            />
+                        </div>
+                        <p v-if="form.errors.email" class="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                            <AlertCircle class="h-3 w-3" />
+                            {{ form.errors.email }}
+                        </p>
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <label
+                                for="password"
+                                class="text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                            >
+                                Password
+                            </label>
+                            <Link
+                                v-if="canResetPassword"
+                                :href="route('password.request')"
+                                class="text-xs font-semibold text-[#0B7563] hover:text-[#086B5B] hover:underline"
+                            >
+                                Lupa password?
+                            </Link>
+                        </div>
+                        <div class="relative mt-2">
+                            <Lock
+                                class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
+                            />
+                            <input
+                                id="password"
+                                :type="showPassword ? 'text' : 'password'"
+                                v-model="form.password"
+                                required
+                                autocomplete="current-password"
+                                placeholder="••••••••"
+                                class="block w-full rounded-xl border border-[#D9E6E3] bg-white py-2.5 pl-10 pr-11 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
+                            />
+                            <button
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                class="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg text-[#6A8593] transition-colors hover:bg-[#F2FBF8] hover:text-[#0B7563]"
+                                :aria-label="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
+                            >
+                                <Eye v-if="!showPassword" class="h-4 w-4" />
+                                <EyeOff v-else class="h-4 w-4" />
+                            </button>
+                        </div>
+                        <p v-if="form.errors.password" class="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
+                            <AlertCircle class="h-3 w-3" />
+                            {{ form.errors.password }}
+                        </p>
+                    </div>
+
+                    <!-- Remember -->
+                    <div class="flex items-center justify-between">
+                        <label class="inline-flex cursor-pointer select-none items-center gap-2.5">
+                            <input
+                                type="checkbox"
+                                v-model="form.remember"
+                                class="h-4 w-4 cursor-pointer rounded border-[#D9E6E3] text-[#0B8570] focus:ring-2 focus:ring-[#0B8570]/20"
+                            />
+                            <span class="text-sm text-[#4A6572]">Ingat saya</span>
+                        </label>
+                    </div>
+
+                    <!-- Submit -->
+                    <button
+                        type="submit"
+                        :disabled="form.processing"
+                        class="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B8570] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+                    >
+                        <span>
+                            {{ form.processing ? 'Memproses…' : 'Masuk' }}
+                        </span>
+                        <ArrowRight
+                            class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                        />
+                    </button>
+
+                    <!-- Verifikasi publik -->
+                    <Link
+                        :href="route('verification.public')"
+                        class="flex items-center justify-center gap-2 rounded-xl border border-[#D9E6E3] bg-white px-5 py-2.5 text-sm font-semibold text-[#4A6572] transition-colors hover:border-[#BCE5DA] hover:bg-[#F8FCFB] hover:text-[#0B7563]"
+                    >
+                        <ScanLine class="h-4 w-4" />
+                        Cek keaslian dokumen
+                    </Link>
+                </form>
+
+                <!-- BSrE badge (mobile) -->
+                <div
+                    class="mt-10 flex items-center gap-3 rounded-2xl border border-[#DCE8E5] bg-white p-3.5 lg:hidden"
+                >
+                    <img
+                        src="/bsre-logo.png"
+                        alt="BSrE BSSN"
+                        class="h-9 w-auto shrink-0"
+                    />
+                    <div class="min-w-0">
+                        <p class="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#0B7563]">
+                            <ShieldCheck class="h-3 w-3" />
+                            Terintegrasi BSrE
+                        </p>
+                        <p class="truncate text-[11px] text-[#6A8593]">
+                            Balai Sertifikasi Elektronik — BSSN
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Footer (mobile) -->
+                <p class="mt-6 text-center text-[11px] text-[#A8BCC2] lg:hidden">
+                    &copy; {{ new Date().getFullYear() }} RSUD dr. H. Andi Abdurrahman Noor
+                </p>
+            </div>
+        </main>
+    </div>
 </template>
