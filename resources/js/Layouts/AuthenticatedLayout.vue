@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
+import FlashToast from '@/Components/FlashToast.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     LayoutDashboard,
@@ -22,7 +23,6 @@ const sidebarOpen = ref(false);
 const user = computed(() => (page.props.auth as any)?.user ?? { name: '', email: '' });
 const userInitial = computed(() => user.value.name?.charAt(0)?.toUpperCase() ?? '?');
 
-/** Judul section di topbar — reaktif terhadap perubahan URL */
 const sectionTitle = computed(() => {
     const url = page.url || '';
     if (url.startsWith('/admin/users')) return 'Manajemen Pengguna';
@@ -60,6 +60,7 @@ const closeSidebar = () => {
 
 <template>
     <div class="min-h-screen bg-[#F8FCFB] font-sans text-[#0F2A2E]">
+        <FlashToast />
         <!-- Backdrop (mobile) -->
         <Transition
             enter-active-class="ease-out duration-200"
@@ -155,7 +156,7 @@ const closeSidebar = () => {
             <header
                 class="sticky top-0 z-20 border-b border-[#E9F0EE] bg-white/85 backdrop-blur-md"
             >
-                <div class="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+                <div class="flex h-20 items-center gap-3 px-4 sm:px-6 lg:px-8">
                     <!-- Toggle mobile -->
                     <button
                         type="button"

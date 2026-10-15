@@ -49,11 +49,12 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::get('/api/users/search', [DocumentController::class, 'searchUsers'])->name('api.users.search');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
-    Route::get('/documents/{document}/verify-api', [DocumentController::class, 'verify'])->name('documents.verifyApi');
     Route::get('/documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('/documents/{document}/reject-sign', [DocumentController::class, 'rejectSign'])->name('documents.rejectSign');
     Route::post('/documents/{document}/revise', [DocumentController::class, 'revise'])->name('documents.revise');
     Route::delete('/documents/{document}/signers/{signer}', [DocumentController::class, 'cancelRequest'])->name('documents.cancelRequest');
+    Route::put('/documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
+    Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     // Proses request TTE
     Route::post('/documents/{document}/request-sign', [DocumentController::class, 'requestSign'])->name('documents.requestSign');

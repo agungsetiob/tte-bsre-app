@@ -19,11 +19,16 @@ class BsreService
 
     private function getClient()
     {
-        // Menggunakan Basic Auth untuk otorisasi base64
-        // withoutVerifying() ditambahkan khusus untuk mengatasi error cURL 60 di lokal
-        return Http::withoutVerifying()
-            ->withBasicAuth($this->username, $this->password)
-            ->baseUrl($this->baseUrl);
+        $client = Http::withBasicAuth(
+            $this->username,
+            $this->password
+        );
+
+        if (app()->environment('local')) {
+            $client = $client->withoutVerifying();
+        }
+
+        return $client->baseUrl($this->baseUrl);
     }
 
     // Pengecekan status pengguna menggunakan NIK

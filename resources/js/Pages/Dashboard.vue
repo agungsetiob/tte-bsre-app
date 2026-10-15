@@ -101,7 +101,7 @@ const formatDate = (dateString: string) => {
                     Dashboard
                 </p>
                 <h2 class="font-display mt-1 text-xl font-bold leading-tight text-[#0F2A2E]">
-                    Halo, {{ auth.user.name }}! 👋
+                    Halo, {{ auth.user.name }}
                 </h2>
                 <p class="mt-0.5 text-xs text-[#6A8593]">
                     {{

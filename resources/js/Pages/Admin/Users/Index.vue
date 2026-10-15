@@ -42,8 +42,6 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
-const flashSuccess = computed(() => (page.props.flash as any)?.success);
-const errorMessage = computed(() => (page.props.errors as any)?.message);
 
 // ============ FILTER STATE ============
 const search = ref(props.filters.search || '');
@@ -132,61 +130,61 @@ type StatusMeta = {
 
 const bsreStatusMap: Record<string, StatusMeta> = {
     ISSUE: {
-        label: 'Aktif',
+        label: 'ISSUE',
         cls: 'bg-[#EAF7F3] text-[#0B7563] border-[#BCE5DA]',
         dot: 'bg-[#0B8570]',
         Icon: ShieldCheck,
     },
     NEW: {
-        label: 'Baru',
+        label: 'NEW',
         cls: 'bg-amber-50 text-amber-700 border-amber-200',
         dot: 'bg-amber-500',
         Icon: AlertCircle,
     },
     RENEW: {
-        label: 'Perpanjangan',
+        label: 'RENEW',
         cls: 'bg-amber-50 text-amber-700 border-amber-200',
         dot: 'bg-amber-500',
         Icon: RefreshCw,
     },
     WAITING_FOR_VERIFICATION: {
-        label: 'Menunggu Verifikasi',
+        label: 'WAITING_FOR_VERIFICATION',
         cls: 'bg-amber-50 text-amber-700 border-amber-200',
         dot: 'bg-amber-500',
         Icon: Clock4,
     },
     EXPIRED: {
-        label: 'Kadaluarsa',
+        label: 'EXPIRED',
         cls: 'bg-rose-50 text-rose-700 border-rose-200',
         dot: 'bg-rose-500',
         Icon: ShieldAlert,
     },
     SUSPEND: {
-        label: 'Suspend',
+        label: 'SUSPEND',
         cls: 'bg-rose-50 text-rose-700 border-rose-200',
         dot: 'bg-rose-500',
         Icon: Ban,
     },
     REVOKE: {
-        label: 'Dicabut',
+        label: 'REVOKE',
         cls: 'bg-rose-50 text-rose-700 border-rose-200',
         dot: 'bg-rose-500',
         Icon: XCircle,
     },
     NOT_REGISTERED: {
-        label: 'Belum Terdaftar',
+        label: 'NOT_REGISTERED',
         cls: 'bg-slate-50 text-slate-700 border-slate-200',
         dot: 'bg-slate-400',
         Icon: AlertCircle,
     },
     NO_CERTIFICATE: {
-        label: 'Tanpa Sertifikat',
+        label: 'NO_CERTIFICATE',
         cls: 'bg-slate-50 text-slate-700 border-slate-200',
         dot: 'bg-slate-400',
         Icon: AlertCircle,
     },
     ERROR_KONEKSI: {
-        label: 'Gagal Cek',
+        label: 'ERROR_KONEKSI',
         cls: 'bg-rose-50 text-rose-700 border-rose-200',
         dot: 'bg-rose-500',
         Icon: AlertCircle,
@@ -239,22 +237,6 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
         <div
             class="mx-auto w-full max-w-8xl space-y-5 px-5 py-8 text-[#0F2A2E] md:px-8"
         >
-            <!-- Flash -->
-            <div
-                v-if="flashSuccess"
-                class="flex items-start gap-3 rounded-2xl border border-[#BCE5DA] bg-[#EAF7F3] p-4 text-sm text-[#0B7563] shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
-            >
-                <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0" />
-                <span class="font-medium">{{ flashSuccess }}</span>
-            </div>
-            <div
-                v-if="errorMessage"
-                class="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
-            >
-                <XCircle class="mt-0.5 h-4 w-4 shrink-0" />
-                <span class="font-medium">{{ errorMessage }}</span>
-            </div>
-
             <!-- Filter bar -->
             <div
                 class="rounded-2xl border border-[#DCE8E5] bg-white p-4 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
@@ -298,17 +280,13 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                             class="w-full appearance-none rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] py-2.5 pl-9 pr-8 text-sm text-[#0F2A2E] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-0"
                         >
                             <option value="">Semua Status TTE</option>
-                            <option value="ISSUE">ISSUE — Aktif</option>
-                            <option value="RENEW">RENEW — Perpanjangan</option>
-                            <option value="NEW">NEW — Baru</option>
+                            <option value="ISSUE">ISSUE</option>
+                            <option value="RENEW">RENEW</option>
+                            <option value="NEW">NEW</option>
                             <option value="EXPIRED">EXPIRED</option>
-                            <option value="NOT_REGISTERED">NOT REGISTERED</option>
-                            <option value="WAITING_FOR_VERIFICATION">
-                                Menunggu Verifikasi
-                            </option>
-                            <option value="NO_CERTIFICATE">
-                                Tanpa Sertifikat
-                            </option>
+                            <option value="NOT_REGISTERED">NOT_REGISTERED</option>
+                            <option value="WAITING_FOR_VERIFICATION">WAITING_FOR_VERIFICATION</option>
+                            <option value="NO_CERTIFICATE">NO_CERTIFICATE</option>
                             <option value="SUSPEND">SUSPEND</option>
                             <option value="REVOKE">REVOKE</option>
                         </select>

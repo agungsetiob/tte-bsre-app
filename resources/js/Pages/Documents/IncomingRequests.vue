@@ -19,6 +19,7 @@ import {
     Layers,
     KeyRound,
     AlertCircle,
+    ExternalLink,
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -431,8 +432,9 @@ const statusMeta = (s: string) =>
                                                     req.document.id
                                                 )
                                             "
-                                            class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#4A6572] transition-colors hover:bg-[#EEF4F2] hover:text-[#0F2A2E]"
+                                            class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#4A6572] transition-colors hover:bg-[#EEF4F2] hover:text-[#0F2A2E]"
                                         >
+                                            <ExternalLink class="h-3.5 w-3.5" />
                                             Detail
                                         </Link>
 

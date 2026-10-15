@@ -102,43 +102,6 @@ class DocumentController extends Controller
         return back()->with('success', 'Dokumen berhasil diunggah, dibubuhi QR Code & footer BSrE.');
     }
 
-    public function destroy(Document $document)
-    {
-        if ($document->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        if ($document->file_path) {
-            Storage::disk('public')->delete($document->file_path);
-        }
-        if ($document->signed_file_path) {
-            Storage::disk('public')->delete($document->signed_file_path);
-        }
-
-        $document->delete();
-
-        return back()->with('success', 'Dokumen berhasil dihapus.');
-    }
-
-    public function verify(Document $document, BsreService $bsreService)
-    {
-        if ($document->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        $targetPath = $document->signed_file_path ?? $document->file_path;
-        $fileContent = Storage::disk('public')->get($targetPath);
-        $fileBase64 = base64_encode($fileContent);
-
-        $response = $bsreService->verifyDocument($fileBase64);
-
-        if ($response->failed()) {
-            return back()->withErrors(['message' => 'Gagal menghubungi server verifikasi BSrE.']);
-        }
-
-        return response()->json($response->json());
-    }
-
     public function download(Document $document)
     {
         if ($document->user_id !== auth()->id()) {
@@ -404,5 +367,65 @@ class DocumentController extends Controller
         }
 
         return back()->with('success', 'Permintaan TTE berhasil ditarik kembali/dibatalkan.');
+    }
+
+    public function update(Request $request, Document $document)
+    {
+        // Pastikan dokumen milik user yang login
+        if ($document->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'file'  => 'nullable|file|mimes:pdf|max:10240', // Maks 10MB
+        ]);
+
+        $document->title = $request->title;
+
+        // Jika user mencoba mengunggah file baru
+        if ($request->hasFile('file')) {
+            // Blokir jika status bukan pending
+            if ($document->status !== 'pending') {
+                return back()->withErrors(['message' => 'File fisik tidak dapat diubah karena dokumen sudah diproses atau dibatalkan.']);
+            }
+
+            // Hapus file lama dari storage
+            if ($document->file_path) {
+                Storage::disk('public')->delete($document->file_path);
+            }
+
+            // Simpan file baru
+            $path = $request->file('file')->store('documents', 'public');
+            $document->file_path = $path;
+        }
+
+        $document->save();
+
+        return back()->with('success', 'Dokumen berhasil diperbarui.');
+    }
+
+    public function destroy(Document $document)
+    {
+        if ($document->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Kunci utama: Hanya bisa hapus jika status pending
+        if ($document->status !== 'pending') {
+            return back()->withErrors(['message' => 'Dokumen yang sudah diproses tidak dapat dihapus dari sistem.']);
+        }
+
+        // Bersihkan file fisik untuk menghemat storage
+        if ($document->file_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($document->file_path);
+        }
+        if ($document->signed_file_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($document->signed_file_path);
+        }
+
+        $document->delete();
+
+        return back()->with('success', 'Dokumen berhasil dihapus secara permanen.');
     }
 }

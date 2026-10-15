@@ -33,7 +33,6 @@ class AdminController extends Controller
             $query->where('bsre_status', $request->bsre_status);
         }
 
-        // Gunakan paginate(10), dan sertakan query string agar filter tidak hilang saat pindah halaman
         $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         return Inertia::render('Admin/Users/Index', [
