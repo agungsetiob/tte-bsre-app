@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm, usePage, Link } from "@inertiajs/vue3";
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import {
     ArrowLeft,
     ArrowRight,
@@ -9,11 +9,11 @@ import {
     FileSignature,
     FileText,
     Info,
-    RefreshCw,
+    Loader,
     RotateCcw,
     ShieldCheck,
     Upload,
-    X
+    X,
 } from "lucide-vue-next";
 
 const form = useForm({
@@ -69,13 +69,14 @@ const dotClasses = computed(() => {
     return conclusionIsValid.value ? "bg-[#10B981]" : "bg-[#F59E0B]";
 });
 
-function formatDate(value?: string) {
-    return value ? value.substring(0, 10) : "-";
-}
-
-function formatDateTime(value?: string) {
-    return value ? value.replace("T", " ").substring(0, 19) : "-";
-}
+const formatDate = (dateString: string) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
+};
 
 function fileSizeLabel() {
     if (!form.file) return "";
@@ -104,10 +105,30 @@ onMounted(() => {
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
 });
+
+const fileInput = ref<HTMLInputElement | null>(null);
+
+function clearFileInput() {
+    if (fileInput.value) fileInput.value.value = "";
+}
+
+/** Tombol "Reset Pilihan Berkas" */
+function resetFileSelection() {
+    form.reset();
+    form.clearErrors();
+    clearFileInput();
+}
+
+/** Tombol "Verifikasi Dokumen Lain" */
+function verifyAnotherDocument() {
+    resetFileSelection();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    nextTick(() => fileInput.value?.click());
+}
 </script>
 
 <template>
-    <Head title="Verifikasi Dokumen — TTE BSrE">
+    <Head title="Verifikasi Dokumen">
         <meta
             name="description"
             content="Periksa keaslian dokumen bertanda tangan elektronik RSUD melalui layanan BSrE."
@@ -241,6 +262,7 @@ onMounted(() => {
                         @drop.prevent="handleDrop($event)"
                     >
                         <input
+                            ref="fileInput"
                             type="file"
                             accept="application/pdf,.pdf"
                             class="sr-only"
@@ -308,20 +330,19 @@ onMounted(() => {
 
                         <div class="mt-auto space-y-3">
                             <button
+                                v-if="!hasResult || hasFile"
                                 type="submit"
                                 :disabled="isProcessing || !hasFile"
                                 class="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B8570] px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-[#086B5B] disabled:cursor-not-allowed disabled:opacity-55"
                             >
-                                <RefreshCw
+                                <Loader
                                     v-if="isProcessing"
                                     class="h-4 w-4 animate-spin"
                                 />
                                 {{
                                     isProcessing
                                         ? "Memeriksa ke Server BSrE..."
-                                        : hasResult
-                                          ? "Verifikasi Dokumen Lain"
-                                          : "Verifikasi Dokumen"
+                                        : "Verifikasi Dokumen"
                                 }}
                                 <ArrowRight
                                     v-if="!isProcessing"
@@ -330,10 +351,22 @@ onMounted(() => {
                             </button>
 
                             <button
+                                v-else
+                                type="button"
+                                @click="verifyAnotherDocument"
+                                class="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B8570] px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-[#086B5B]"
+                            >
+                                <Upload
+                                    class="h-4 w-4 transition-transform group-hover:-translate-y-0.5"
+                                />
+                                Verifikasi Dokumen Lain
+                            </button>
+
+                            <button
                                 v-if="hasFile"
                                 type="button"
                                 class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#B9D3CD] px-4 py-2.5 text-sm font-medium text-[#46626F] transition-colors hover:border-[#0B8570]/60 hover:bg-[#F2FBF8]"
-                                @click="form.reset()"
+                                @click="resetFileSelection"
                             >
                                 <RotateCcw class="h-4 w-4" />
                                 Reset Pilihan Berkas
@@ -527,7 +560,7 @@ onMounted(() => {
                                                     ?.notBeforeDate,
                                             )
                                         }}
-                                        s/d
+                                        -
                                         {{
                                             formatDate(
                                                 sig.certificateDetails?.[0]
@@ -544,7 +577,18 @@ onMounted(() => {
                                         Ditandatangani Pada
                                     </dt>
                                     <dd class="mt-0.5 text-[#4A6572]">
-                                        {{ formatDateTime(sig.signatureDate) }}
+                                        {{
+                                            new Date(
+                                                sig.signatureDate,
+                                            ).toLocaleString("id-ID", {
+                                                year: "numeric",
+                                                month: "long",
+                                                day: "numeric",
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                                second: "2-digit",
+                                            })
+                                        }}
                                     </dd>
                                 </div>
                             </dl>

@@ -17,6 +17,7 @@ import {
     ChevronDown,
     Layers,
     ExternalLink,
+    Download,
 } from "lucide-vue-next";
 const props = defineProps<{
     incomingRequests: { data: Array<any>; links: Array<any> };
@@ -385,6 +386,9 @@ const statusMeta = (s: string) =>
                                     <div
                                         class="flex items-center justify-end gap-1"
                                     >
+                                        <a :href="route('documents.download', req.document.id)" target="_blank" class="inline-flex items-center gap-1 rounded-lg bg-sky-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-700">
+                                            <Download class="h-3.5 w-3.5" /> Unduh
+                                        </a>
                                         <Link
                                             :href="
                                                 route(
