@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head, usePage, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { ref, computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 import TteProcessModal from '@/Components/TteProcessModal.vue';
 import DocumentUploadModal from '@/Components/DocumentUploadModal.vue';
 import DocumentEditModal from '@/Components/DocumentEditModal.vue';
@@ -16,9 +16,6 @@ const props = defineProps<{
     filters: { search?: string; status?: string };
     auth: { user: { name: string; specimen_path: string | null } };
 }>();
-
-const page = usePage();
-const flashSuccess = computed(() => (page.props.flash as any)?.success);
 
 const search = ref(props.filters.search || '');
 const statusFilter = ref(props.filters.status || '');
@@ -93,10 +90,6 @@ const statusMeta = (s: string) =>
         </template>
 
         <div class="mx-auto w-full max-w-8xl space-y-5 px-5 py-8 text-[#0F2A2E] md:px-8">
-            <div v-if="flashSuccess" class="flex items-start gap-3 rounded-2xl border border-[#BCE5DA] bg-[#EAF7F3] p-4 text-sm text-[#0B7563] shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]">
-                <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0" />
-                <span class="font-medium">{{ flashSuccess }}</span>
-            </div>
 
             <div class="rounded-2xl border border-[#DCE8E5] bg-white p-4 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]">
                 <div class="flex flex-col gap-3 sm:flex-row">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { Head } from '@inertiajs/vue3';
-import axios from 'axios';
+import { ref, onMounted, computed } from "vue";
+import { Head } from "@inertiajs/vue3";
+import axios from "axios";
 import {
     ShieldCheck,
     ShieldX,
@@ -17,7 +17,7 @@ import {
     Info,
     Search,
     ArrowLeft,
-} from 'lucide-vue-next';
+} from "lucide-vue-next";
 
 const props = defineProps<{
     document: any;
@@ -30,7 +30,7 @@ const isError = ref(false);
 onMounted(async () => {
     try {
         const response = await axios.post(
-            route('verify.check_async', props.document.verification_code)
+            route("verify.check_async", props.document.verification_code),
         );
         verificationResult.value = response.data;
     } catch (error) {
@@ -42,13 +42,11 @@ onMounted(async () => {
 });
 
 const formatDate = (dateString: string) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("id-ID", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
     });
 };
 
@@ -63,45 +61,46 @@ type StateMeta = {
 const stateMeta = computed<StateMeta>(() => {
     if (isLoading.value) {
         return {
-            bg: 'from-[#0F2A2E] via-[#0B7563] to-[#0B8570]',
+            bg: "from-[#0F2A2E] via-[#0B7563] to-[#0B8570]",
             Icon: Loader2,
-            title: 'Memverifikasi Dokumen…',
-            subtitle: 'Menghubungi server BSrE BSSN',
+            title: "Memverifikasi Dokumen…",
+            subtitle: "Menghubungi server BSrE BSSN",
         };
     }
 
     if (isError.value) {
         return {
-            bg: 'from-amber-500 to-amber-600',
+            bg: "from-amber-500 to-amber-600",
             Icon: ShieldAlert,
-            title: 'Pengecekan Tertunda',
+            title: "Pengecekan Tertunda",
             subtitle:
-                'Gagal terhubung ke server BSrE. Menampilkan data dari sistem lokal.',
+                "Gagal terhubung ke server BSrE. Menampilkan data dari sistem lokal.",
         };
     }
 
     const conclusion = verificationResult.value?.conclusion;
     const description = verificationResult.value?.description;
 
-    if (conclusion === 'VALID') {
+    if (conclusion === "VALID") {
         return {
-            bg: 'from-[#0B7563] to-[#0B8570]',
+            bg: "from-[#0B7563] to-[#0B8570]",
             Icon: ShieldCheck,
-            title: description || 'Dokumen Sah',
-            subtitle:
-                'Tanda tangan elektronik terverifikasi oleh BSrE BSSN.',
+            title: description || "Dokumen Sah",
+            subtitle: "Tanda tangan elektronik terverifikasi oleh BSrE BSSN.",
         };
     }
 
     return {
-        bg: 'from-rose-500 to-rose-600',
+        bg: "from-rose-500 to-rose-600",
         Icon: ShieldX,
-        title: description || 'Dokumen Tidak Valid',
-        subtitle: 'Tanda tangan elektronik tidak dapat diverifikasi.',
+        title: description || "Dokumen Tidak Valid",
+        subtitle: "Tanda tangan elektronik tidak dapat diverifikasi.",
     };
 });
 
-const isValid = computed(() => verificationResult.value?.conclusion === 'VALID');
+const isValid = computed(
+    () => verificationResult.value?.conclusion === "VALID",
+);
 </script>
 
 <template>
@@ -120,9 +119,21 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
             class="pointer-events-none absolute inset-0 opacity-60"
             style="
                 background-image:
-                    radial-gradient(circle at 20% 10%, rgba(11, 133, 112, 0.10), transparent 40%),
-                    radial-gradient(circle at 85% 20%, rgba(226, 154, 45, 0.10), transparent 45%);
-                mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 70%);
+                    radial-gradient(
+                        circle at 20% 10%,
+                        rgba(11, 133, 112, 0.1),
+                        transparent 40%
+                    ),
+                    radial-gradient(
+                        circle at 85% 20%,
+                        rgba(226, 154, 45, 0.1),
+                        transparent 45%
+                    );
+                mask-image: linear-gradient(
+                    180deg,
+                    rgba(0, 0, 0, 0.7),
+                    transparent 70%
+                );
             "
         />
 
@@ -132,7 +143,7 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
                 <img
                     src="/logo.png"
                     alt="HELODOCS"
-                    class="h-10 w-auto sm:h-11"
+                    class="h-10 w-auto sm:h-14"
                 />
                 <a
                     href="/"
@@ -168,9 +179,7 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
                             <component
                                 :is="stateMeta.Icon"
                                 class="h-9 w-9"
-                                :class="
-                                    isLoading ? 'animate-spin' : ''
-                                "
+                                :class="isLoading ? 'animate-spin' : ''"
                             />
                         </span>
                         <!-- pulse ring -->
@@ -191,18 +200,6 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
                     >
                         {{ stateMeta.subtitle }}
                     </p>
-
-                    <!-- Kode verifikasi -->
-                    <div
-                        class="relative mt-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 backdrop-blur"
-                    >
-                        <BadgeCheck class="h-3.5 w-3.5" />
-                        <span
-                            class="text-[11px] font-bold uppercase tracking-[0.16em]"
-                        >
-                            {{ document.verification_code }}
-                        </span>
-                    </div>
                 </div>
 
                 <!-- ============ BODY ============ -->
@@ -247,7 +244,7 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
                                     <p
                                         class="mt-0.5 truncate text-sm font-semibold text-[#0F2A2E]"
                                     >
-                                        {{ document.owner?.name || 'Sistem' }}
+                                        {{ document.owner?.name || "Sistem" }}
                                     </p>
                                 </div>
                             </div>
@@ -267,12 +264,15 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
                         <div
                             v-if="
                                 verificationResult?.signatureInformations &&
-                                verificationResult.signatureInformations.length > 0
+                                verificationResult.signatureInformations
+                                    .length > 0
                             "
                             class="mt-4 space-y-3"
                         >
                             <div
-                                v-for="(sig, idx) in verificationResult.signatureInformations"
+                                v-for="(
+                                    sig, idx
+                                ) in verificationResult.signatureInformations"
                                 :key="idx"
                                 class="overflow-hidden rounded-2xl border border-[#DCE8E5] bg-[#F8FCFB]"
                             >
@@ -331,9 +331,16 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
                                                 class="font-semibold text-[#0F2A2E]"
                                             >
                                                 {{
-                                                    sig.signatureDate
-                                                        ?.replace('T', ' ')
-                                                        .substring(0, 19)
+                                                    new Date(
+                                                        sig.signatureDate,
+                                                    ).toLocaleString("id-ID", {
+                                                        year: "numeric",
+                                                        month: "long",
+                                                        day: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                        second: "2-digit",
+                                                    })
                                                 }}
                                             </p>
                                         </div>
@@ -354,18 +361,22 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
                                                 class="font-semibold text-[#0F2A2E]"
                                             >
                                                 {{
-                                                    sig.certificateDetails[0].notBeforeDate?.substring(
-                                                        0,
-                                                        10
+                                                    formatDate(
+                                                        sig.certificateDetails[0].notBeforeDate?.substring(
+                                                            0,
+                                                            10,
+                                                        ),
                                                     )
                                                 }}
                                                 <span class="text-[#A8BCC2]">
                                                     →
                                                 </span>
                                                 {{
-                                                    sig.certificateDetails[0].notAfterDate?.substring(
-                                                        0,
-                                                        10
+                                                    formatDate(
+                                                        sig.certificateDetails[0].notAfterDate?.substring(
+                                                            0,
+                                                            10,
+                                                        ),
                                                     )
                                                 }}
                                             </p>
@@ -406,9 +417,7 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
                                 class="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
                             />
                             <div>
-                                <p
-                                    class="text-sm font-bold text-amber-800"
-                                >
+                                <p class="text-sm font-bold text-amber-800">
                                     Belum Ada Tanda Tangan Elektronik
                                 </p>
                                 <p
@@ -432,15 +441,12 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
                     </div>
 
                     <!-- ============ DOWNLOAD ============ -->
-                    <div
-                        v-if="isValid"
-                        class="border-t border-[#EEF4F2] pt-6"
-                    >
+                    <div v-if="isValid" class="border-t border-[#EEF4F2] pt-6">
                         <a
                             :href="
                                 route(
                                     'verify.download',
-                                    document.verification_code
+                                    document.verification_code,
                                 )
                             "
                             class="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B8570] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B]"
@@ -467,7 +473,8 @@ const isValid = computed(() => verificationResult.value?.conclusion === 'VALID')
 
             <!-- ============ FOOTER TEXT ============ -->
             <p class="mt-6 text-center text-[11px] text-[#A8BCC2]">
-                &copy; {{ new Date().getFullYear() }} RSUD dr. H. Andi Abdurrahman Noor
+                &copy; {{ new Date().getFullYear() }} RSUD dr. H. Andi
+                Abdurrahman Noor
                 <span class="mx-1">•</span>
                 Halaman verifikasi publik
             </p>

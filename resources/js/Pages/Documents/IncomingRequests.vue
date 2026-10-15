@@ -1,50 +1,42 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { ref, computed, watch } from 'vue';
-import TteProcessModal from '@/Components/TteProcessModal.vue';
-import Modal from '@/Components/Modal.vue';
+import { Head, Link, router } from "@inertiajs/vue3";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import { ref, watch } from "vue";
+import TteProcessModal from "@/Components/TteProcessModal.vue";
+import RejectSignModal from "@/Components/RejectSignModal.vue";
+import BatchSignModal from "@/Components/BatchSignModal.vue";
 import {
     ArrowLeft,
     Inbox,
     PenLine,
-    CheckCircle2,
     FileText,
     XCircle,
     Search,
     Calendar,
     Filter,
     ChevronDown,
-    AlertTriangle,
     Layers,
-    KeyRound,
-    AlertCircle,
     ExternalLink,
-} from 'lucide-vue-next';
-
+} from "lucide-vue-next";
 const props = defineProps<{
     incomingRequests: { data: Array<any>; links: Array<any> };
     filters: { search?: string; status?: string; date?: string };
     auth: { user: { name: string; specimen_path: string | null } };
 }>();
 
-const page = usePage();
-const flashSuccess = computed(() => (page.props.flash as any)?.success);
-const errorMessage = computed(() => (page.props.errors as any)?.message);
-
 // STATE FILTER
-const search = ref(props.filters.search || '');
-const statusFilter = ref(props.filters.status ?? 'pending');
-const dateFilter = ref(props.filters.date || '');
+const search = ref(props.filters.search || "");
+const statusFilter = ref(props.filters.status ?? "pending");
+const dateFilter = ref(props.filters.date || "");
 
 let searchTimeout: any = null;
 watch([search, statusFilter, dateFilter], ([newSearch, newStatus, newDate]) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         router.get(
-            route('documents.requests'),
+            route("documents.requests"),
             { search: newSearch, status: newStatus, date: newDate },
-            { preserveState: true, replace: true }
+            { preserveState: true, replace: true },
         );
     }, 500);
 });
@@ -58,87 +50,60 @@ const openSignModal = (req: any) => {
 };
 
 const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+    return new Date(dateString).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
     });
 };
 
-// Reject
 const showRejectModal = ref(false);
 const requestToReject = ref<any>(null);
-const rejectForm = useForm({ reason: '' });
 
 const openRejectModal = (req: any) => {
     requestToReject.value = req;
-    rejectForm.reset();
     showRejectModal.value = true;
-};
-
-const submitReject = () => {
-    rejectForm.post(route('documents.rejectSign', requestToReject.value.document.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-            showRejectModal.value = false;
-        },
-    });
 };
 
 // Batch
 const selectedDocs = ref<number[]>([]);
 const showBatchModal = ref(false);
-const batchForm = useForm({ document_ids: [] as number[], passphrase: '' });
 
 const toggleSelectAll = (e: Event) => {
     const checked = (e.target as HTMLInputElement).checked;
     if (checked) {
         selectedDocs.value = props.incomingRequests.data
-            .filter((req: any) => req.status === 'pending')
+            .filter((req: any) => req.status === "pending")
             .map((req: any) => req.document.id);
     } else {
         selectedDocs.value = [];
     }
 };
 
-const submitBatchSign = () => {
-    batchForm.document_ids = selectedDocs.value;
-    batchForm.post(route('documents.batch_sign'), {
-        preserveScroll: true,
-        onSuccess: (page) => {
-            if (!page.props.errors || Object.keys(page.props.errors).length === 0) {
-                showBatchModal.value = false;
-                selectedDocs.value = [];
-                batchForm.reset();
-            }
-        },
-    });
-};
-
 const statusMeta = (s: string) =>
     ({
         pending: {
-            label: 'Menunggu TTE',
-            cls: 'bg-amber-50 text-amber-700 border-amber-200',
-            dot: 'bg-amber-500',
+            label: "Menunggu TTE",
+            cls: "bg-amber-50 text-amber-700 border-amber-200",
+            dot: "bg-amber-500",
         },
         signed: {
-            label: 'Selesai di-TTE',
-            cls: 'bg-[#EAF7F3] text-[#0B7563] border-[#BCE5DA]',
-            dot: 'bg-[#0B8570]',
+            label: "Selesai di-TTE",
+            cls: "bg-[#EAF7F3] text-[#0B7563] border-[#BCE5DA]",
+            dot: "bg-[#0B8570]",
         },
         rejected: {
-            label: 'Ditolak',
-            cls: 'bg-rose-50 text-rose-700 border-rose-200',
-            dot: 'bg-rose-500',
+            label: "Ditolak",
+            cls: "bg-rose-50 text-rose-700 border-rose-200",
+            dot: "bg-rose-500",
         },
-    }[s] || {
-        label: s || '—',
-        cls: 'bg-slate-50 text-slate-700 border-slate-200',
-        dot: 'bg-slate-400',
-    });
+    })[s] || {
+        label: s || "—",
+        cls: "bg-slate-50 text-slate-700 border-slate-200",
+        dot: "bg-slate-400",
+    };
 </script>
 
 <template>
@@ -171,15 +136,6 @@ const statusMeta = (s: string) =>
         <div
             class="mx-auto w-full max-w-8xl space-y-5 px-5 py-8 text-[#0F2A2E] md:px-8"
         >
-            <!-- Flash -->
-            <div
-                v-if="flashSuccess"
-                class="flex items-start gap-3 rounded-2xl border border-[#BCE5DA] bg-[#EAF7F3] p-4 text-sm text-[#0B7563] shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
-            >
-                <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0" />
-                <span class="font-medium">{{ flashSuccess }}</span>
-            </div>
-
             <!-- Batch action bar -->
             <Transition
                 enter-active-class="ease-out duration-200"
@@ -329,7 +285,9 @@ const statusMeta = (s: string) =>
                                         <div
                                             class="grid h-14 w-14 place-items-center rounded-2xl bg-[#EAF7F3]"
                                         >
-                                            <Inbox class="h-7 w-7 text-[#0B7563]" />
+                                            <Inbox
+                                                class="h-7 w-7 text-[#0B7563]"
+                                            />
                                         </div>
                                         <div>
                                             <p
@@ -389,7 +347,9 @@ const statusMeta = (s: string) =>
                                                 <span
                                                     class="font-medium text-[#4A6572]"
                                                 >
-                                                    {{ req.document.owner.name }}
+                                                    {{
+                                                        req.document.owner.name
+                                                    }}
                                                 </span>
                                             </p>
                                         </div>
@@ -429,7 +389,7 @@ const statusMeta = (s: string) =>
                                             :href="
                                                 route(
                                                     'documents.show',
-                                                    req.document.id
+                                                    req.document.id,
                                                 )
                                             "
                                             class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#4A6572] transition-colors hover:bg-[#EEF4F2] hover:text-[#0F2A2E]"
@@ -438,7 +398,9 @@ const statusMeta = (s: string) =>
                                             Detail
                                         </Link>
 
-                                        <template v-if="req.status === 'pending'">
+                                        <template
+                                            v-if="req.status === 'pending'"
+                                        >
                                             <button
                                                 type="button"
                                                 @click="openRejectModal(req)"
@@ -474,7 +436,10 @@ const statusMeta = (s: string) =>
                 <div
                     class="inline-flex items-center gap-1 rounded-xl border border-[#DCE8E5] bg-white p-1 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
                 >
-                    <template v-for="(link, k) in incomingRequests.links" :key="k">
+                    <template
+                        v-for="(link, k) in incomingRequests.links"
+                        :key="k"
+                    >
                         <div
                             v-if="link.url === null"
                             class="cursor-not-allowed rounded-lg px-3 py-1.5 text-xs font-semibold text-[#A8BCC2]"
@@ -506,166 +471,17 @@ const statusMeta = (s: string) =>
         />
 
         <!-- Reject Modal -->
-        <Modal :show="showRejectModal" max-width="md" @close="showRejectModal = false">
-            <div class="p-6">
-                <div class="flex items-start gap-3">
-                    <span
-                        class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-600"
-                    >
-                        <AlertTriangle class="h-5 w-5" />
-                    </span>
-                    <div class="min-w-0">
-                        <h3 class="font-display text-lg font-bold text-[#0F2A2E]">
-                            Tolak Permintaan TTE
-                        </h3>
-                        <p class="mt-0.5 truncate text-xs text-[#6A8593]">
-                            {{ requestToReject?.document.title }}
-                        </p>
-                    </div>
-                </div>
-
-                <p class="mt-5 text-sm leading-relaxed text-[#4A6572]">
-                    Dokumen akan dikembalikan ke staf pengunggah. Mohon berikan alasan
-                    yang jelas agar dapat diperbaiki.
-                </p>
-
-                <form @submit.prevent="submitReject" class="mt-4 space-y-4">
-                    <div>
-                        <label
-                            class="block text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
-                        >
-                            Alasan Penolakan
-                        </label>
-                        <textarea
-                            v-model="rejectForm.reason"
-                            required
-                            rows="3"
-                            placeholder="Contoh: Ada salah ketik pada nominal angka…"
-                            class="mt-1.5 block w-full resize-none rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] px-3.5 py-2.5 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] focus:border-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-500/10"
-                        />
-                        <p
-                            v-if="rejectForm.errors.reason"
-                            class="mt-1 text-xs text-rose-600"
-                        >
-                            {{ rejectForm.errors.reason }}
-                        </p>
-                    </div>
-
-                    <div class="flex justify-end gap-2 border-t border-[#EEF4F2] pt-4">
-                        <button
-                            type="button"
-                            @click="showRejectModal = false"
-                            class="rounded-xl border border-[#D9E6E3] bg-white px-4 py-2 text-sm font-semibold text-[#4A6572] transition-colors hover:bg-[#F2FBF8]"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="rejectForm.processing"
-                            class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(225,29,72,.5)] transition-all hover:-translate-y-0.5 hover:bg-rose-700 disabled:opacity-50 disabled:hover:translate-y-0"
-                        >
-                            {{
-                                rejectForm.processing
-                                    ? 'Mengirim…'
-                                    : 'Kirim Penolakan'
-                            }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
+        <RejectSignModal
+            v-model:show="showRejectModal"
+            :request="requestToReject"
+            @success="requestToReject = null"
+        />
 
         <!-- Batch Sign Modal -->
-        <Modal :show="showBatchModal" max-width="md" @close="showBatchModal = false">
-            <div class="p-6">
-                <div class="flex items-start gap-3">
-                    <span
-                        class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#EAF7F3] text-[#0B7563]"
-                    >
-                        <Layers class="h-5 w-5" />
-                    </span>
-                    <div class="min-w-0">
-                        <h3 class="font-display text-lg font-bold text-[#0F2A2E]">
-                            TTE Massal
-                        </h3>
-                        <p class="mt-0.5 text-xs text-[#6A8593]">
-                            Mode Invisible — tanpa visual spesimen
-                        </p>
-                    </div>
-                </div>
-
-                <div
-                    class="mt-5 rounded-xl border border-[#E9F0EE] bg-[#F8FCFB] p-3.5 text-sm"
-                >
-                    <p class="text-[#4A6572]">
-                        Anda akan menandatangani
-                        <span class="font-bold text-[#0F2A2E]">
-                            {{ selectedDocs.length }} dokumen
-                        </span>
-                        sekaligus.
-                    </p>
-                </div>
-
-                <div
-                    v-if="errorMessage"
-                    class="mt-4 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
-                >
-                    <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
-                    <span class="font-medium">{{ errorMessage }}</span>
-                </div>
-
-                <div
-                    v-if="Object.keys(batchForm.errors).length > 0"
-                    class="mt-4 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
-                >
-                    <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
-                    <ul class="list-inside list-disc space-y-0.5 font-medium">
-                        <li v-for="(error, key) in batchForm.errors" :key="key">
-                            {{ error }}
-                        </li>
-                    </ul>
-                </div>
-
-                <form @submit.prevent="submitBatchSign" class="mt-5 space-y-4">
-                    <div>
-                        <label
-                            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
-                        >
-                            <KeyRound class="h-3.5 w-3.5" />
-                            Passphrase BSrE
-                        </label>
-                        <input
-                            type="password"
-                            v-model="batchForm.passphrase"
-                            required
-                            placeholder="••••••••"
-                            autocomplete="off"
-                            class="mt-1.5 block w-full rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] px-3.5 py-2.5 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
-                        />
-                    </div>
-
-                    <div class="flex justify-end gap-2 border-t border-[#EEF4F2] pt-4">
-                        <button
-                            type="button"
-                            @click="showBatchModal = false"
-                            class="rounded-xl border border-[#D9E6E3] bg-white px-4 py-2 text-sm font-semibold text-[#4A6572] transition-colors hover:bg-[#F2FBF8]"
-                        >
-                            Batal
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="batchForm.processing"
-                            class="rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B] disabled:opacity-50 disabled:hover:translate-y-0"
-                        >
-                            {{
-                                batchForm.processing
-                                    ? 'Memproses…'
-                                    : 'Proses Semua'
-                            }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
+        <BatchSignModal
+            v-model:show="showBatchModal"
+            :document-ids="selectedDocs"
+            @success="selectedDocs = []"
+        />
     </AuthenticatedLayout>
 </template>

@@ -5,14 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Document;
 use App\Models\DocumentSigner;
 use App\Models\User;
-use App\Services\BsreService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Inertia\Inertia;
 use setasign\Fpdi\Fpdi;
-use Carbon\Carbon;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class DocumentController extends Controller
 {
@@ -48,7 +47,7 @@ class DocumentController extends Controller
         ]);
 
         $fileObj = $request->file('file');
-        
+
         // 1. Buat Kode Verifikasi Unik & URL-nya
         $verificationCode = Str::random(16);
         $verifyUrl = route('verify.document', $verificationCode);
@@ -62,25 +61,24 @@ class DocumentController extends Controller
         $pdf->SetAutoPageBreak(false);
 
         $disclaimerText = "
-        Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik yang diterbitkan oleh BSrE, BSSN.
-        Scan QR Code untuk memverifikasi dokumen ini.";
+            Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik yang diterbitkan oleh BSrE, BSSN.<br>
+            Scan QR Code untuk memverifikasi dokumen ini.";
 
         for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
             $templateId = $pdf->importPage($pageNo);
             $size = $pdf->getTemplateSize($templateId);
-            
+
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($templateId);
-            
+
             // Cetak QR Code di pojok KIRI BAWAH
-            // Parameter: Image(file, koordinat_X, koordinat_Y, lebar, tinggi)
             $pdf->Image($qrTempPath, 5, $size['height'] - 20, 15, 15, 'PNG');
-            
+
             // Cetak Teks Disclaimer di tengah bawah
             $pdf->SetFont('Arial', 'I', 8);
             $pdf->SetTextColor(120, 120, 120);
             $pdf->SetXY(0, $size['height'] - 10);
-            $pdf->Cell($size['width'], 5, $disclaimerText, 0, 0, 'C'); 
+            $pdf->Cell($size['width'], 5, $disclaimerText, 0, 0, 'C');
         }
 
         // Hapus file QR sementara agar server tidak penuh
@@ -96,10 +94,10 @@ class DocumentController extends Controller
             'verification_code' => $verificationCode,
             'title'             => $request->title,
             'file_path'         => $stampedFilePath,
-            'status'            => 'pending'
+            'status'            => 'pending',
         ]);
 
-        return back()->with('success', 'Dokumen berhasil diunggah, dibubuhi QR Code & footer BSrE.');
+        return flash_success('Dokumen berhasil diunggah, dibubuhi QR Code & footer BSrE.');
     }
 
     public function download(Document $document)
@@ -114,7 +112,6 @@ class DocumentController extends Controller
 
     public function show(Document $document)
     {
-        // Pastikan dokumen beserta relasi signers dan usernya dimuat
         $document->load(['owner', 'signers.signer', 'signers.requester']);
 
         return Inertia::render('Documents/Show', [
@@ -132,30 +129,30 @@ class DocumentController extends Controller
             'note'    => 'nullable|string|max:255',
         ]);
 
-        // CEK 1: Apakah masih ada permintaan yang PENDING? (Pencegahan Sekuensial)
+        // CEK 1: Apakah masih ada permintaan yang PENDING?
         $hasPendingRequest = DocumentSigner::where('document_id', $document->id)
             ->where('status', 'pending')
             ->exists();
 
         if ($hasPendingRequest) {
-            return back()->withErrors(['message' => 'Tidak dapat meneruskan dokumen. Masih ada permintaan TTE yang berstatus Menunggu.']);
+            return flash_error('Tidak dapat meneruskan dokumen. Masih ada permintaan TTE yang berstatus Menunggu.');
         }
 
         $targetUserId = $request->user_id;
 
         // CEK 2: Cek apakah user yang dituju masih aktif
         $targetUser = User::find($targetUserId);
-        if (!$targetUser || !$targetUser->is_active) {
-            return back()->withErrors(['message' => 'Pegawai yang dipilih tidak aktif atau tidak ditemukan.']);
+        if (! $targetUser || ! $targetUser->is_active) {
+            return flash_error('Pegawai yang dipilih tidak aktif atau tidak ditemukan.');
         }
 
-        // CEK 3: Cegah duplikasi permintaan ke orang yang sama pada dokumen yang sama
+        // CEK 3: Cegah duplikasi permintaan ke orang yang sama
         $alreadyRequested = DocumentSigner::where('document_id', $document->id)
             ->where('user_id', $targetUserId)
             ->exists();
 
         if ($alreadyRequested) {
-            return back()->withErrors(['message' => 'Pegawai ini sudah ada dalam daftar penandatangan dokumen ini.']);
+            return flash_error('Pegawai ini sudah ada dalam daftar penandatangan dokumen ini.');
         }
 
         // Simpan permintaan ke database
@@ -170,16 +167,15 @@ class DocumentController extends Controller
             $document->update(['status' => 'forwarded']);
         }
 
-        return back()->with('success', "Permintaan TTE berhasil diteruskan kepada {$targetUser->name}.");
+        return flash_success("Permintaan TTE berhasil diteruskan kepada {$targetUser->name}.");
     }
 
     public function incomingRequests(Request $request)
     {
-        // Gunakan where() dengan closure untuk membungkus pencarian relasi agar user_id tidak bocor
         $query = DocumentSigner::with(['document.owner', 'requester'])
             ->where('user_id', auth()->id());
 
-        // 1. Pencarian (Nama Dokumen atau Nama Peminta)
+        // 1. Pencarian
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -191,11 +187,10 @@ class DocumentController extends Controller
             });
         }
 
-        // 2. Filter Status (Default: tampilkan 'pending', kecuali user memilih filter lain)
+        // 2. Filter Status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         } else {
-            // Jika filter kosong/pertama kali load, default tampilkan yang pending saja seperti "Inbox"
             $query->where('status', 'pending');
         }
 
@@ -210,12 +205,11 @@ class DocumentController extends Controller
             }
         }
 
-        // Paginasi
         $requests = $query->latest()->paginate(10)->withQueryString();
 
         return inertia('Documents/IncomingRequests', [
             'incomingRequests' => $requests,
-            'filters' => $request->only(['search', 'status', 'date'])
+            'filters' => $request->only(['search', 'status', 'date']),
         ]);
     }
 
@@ -225,7 +219,7 @@ class DocumentController extends Controller
     public function searchUsers(Request $request)
     {
         $query = $request->input('q');
-        
+
         $users = User::where('is_active', true)
             ->where('id', '!=', auth()->id())
             ->when($query, function ($q) use ($query) {
@@ -241,12 +235,12 @@ class DocumentController extends Controller
     }
 
     /**
-     * Menolak Permintaan TTE (Dilengkapi Alasan)
+     * Menolak Permintaan TTE
      */
     public function rejectSign(Request $request, Document $document)
     {
         $request->validate([
-            'reason' => 'required|string|max:500'
+            'reason' => 'required|string|max:500',
         ]);
 
         $signer = DocumentSigner::where('document_id', $document->id)
@@ -254,19 +248,18 @@ class DocumentController extends Controller
             ->where('status', 'pending')
             ->first();
 
-        if (!$signer) {
+        if (! $signer) {
             return back()->withErrors(['message' => 'Permintaan tidak ditemukan atau sudah diproses.']);
         }
 
-        // Simpan alasan penolakan
         $signer->update([
             'status' => 'rejected',
-            'reject_reason' => $request->reason
+            'reject_reason' => $request->reason,
         ]);
-        
-        $document->update(['status' => 'rejected']); 
 
-        return back()->with('success', 'Dokumen berhasil dikembalikan dengan catatan penolakan.');
+        $document->update(['status' => 'rejected']);
+
+        return flash_success('Dokumen berhasil dikembalikan dengan catatan penolakan.');
     }
 
     /**
@@ -274,7 +267,6 @@ class DocumentController extends Controller
      */
     public function revise(Request $request, Document $document)
     {
-        // Hanya pemilik dokumen yang boleh melakukan revisi
         if ($document->user_id !== auth()->id()) {
             abort(403, 'Anda tidak memiliki akses untuk merevisi dokumen ini.');
         }
@@ -290,11 +282,10 @@ class DocumentController extends Controller
         }
 
         $fileObj = $request->file('file');
-        
+
         $pdf = new Fpdi();
         $pageCount = $pdf->setSourceFile($fileObj->getRealPath());
 
-        // MATIKAN AUTO PAGE BREAK AGAR TIDAK MEMBUAT HALAMAN BARU
         $pdf->SetAutoPageBreak(false);
 
         $disclaimerText = "Dokumen ini telah ditandatangani secara elektronik menggunakan sertifikat elektronik yang diterbitkan oleh BSrE, BSSN.";
@@ -302,38 +293,30 @@ class DocumentController extends Controller
         for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
             $templateId = $pdf->importPage($pageNo);
             $size = $pdf->getTemplateSize($templateId);
-            
-            // Tambahkan halaman dengan ukuran & orientasi asli
+
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($templateId);
-            
-            // Atur Font & Warna (Abu-abu)
+
             $pdf->SetFont('Arial', 'I', 8);
             $pdf->SetTextColor(120, 120, 120);
-            
-            // Posisikan 10mm dari batas paling bawah halaman
             $pdf->SetXY(0, $size['height'] - 10);
-            $pdf->Cell($size['width'], 5, $disclaimerText, 0, 0, 'C'); 
+            $pdf->Cell($size['width'], 5, $disclaimerText, 0, 0, 'C');
         }
 
-        // Simpan file perbaikan yang sudah distempel
-        $stampedContent = $pdf->Output('S'); 
+        $stampedContent = $pdf->Output('S');
         $newPath = 'original_docs/' . uniqid('doc_') . '.pdf';
-        
-        Storage::disk('public')->put($newPath, $stampedContent);
-        // ---------------------------------------------------------
 
-        // Reset Dokumen ke kondisi awal dengan path file baru
+        Storage::disk('public')->put($newPath, $stampedContent);
+
         $document->update([
             'file_path' => $newPath,
-            'signed_file_path' => null, // TTE yang lama hangus
-            'status' => 'pending'
+            'signed_file_path' => null,
+            'status' => 'pending',
         ]);
 
-        // Hapus semua riwayat penandatanganan sebelumnya agar diulang dari awal
         DocumentSigner::where('document_id', $document->id)->delete();
 
-        return back()->with('success', 'Dokumen perbaikan berhasil diunggah dan dibubuhi footer peringatan BSrE. Silakan ajukan ulang permintaan TTE.');
+        return flash_success('Dokumen perbaikan berhasil diunggah dan dibubuhi footer peringatan BSrE. Silakan ajukan ulang permintaan TTE.');
     }
 
     /**
@@ -341,68 +324,57 @@ class DocumentController extends Controller
      */
     public function cancelRequest(Document $document, DocumentSigner $signer)
     {
-        // 1. Pastikan signer ini benar milik dokumen yang dimaksud
         if ($signer->document_id !== $document->id) {
             abort(404);
         }
 
-        // 2. Pastikan statusnya masih pending (belum di-TTE)
         if ($signer->status !== 'pending') {
-            return back()->withErrors(['message' => 'Gagal dibatalkan: Dokumen sudah diproses oleh pejabat yang bersangkutan.']);
+            return flash_error('Gagal dibatalkan: Dokumen sudah diproses oleh pejabat yang bersangkutan.');
         }
 
-        // 3. Pastikan yang membatalkan adalah orang yang meminta ATAU pemilik dokumen
         if ($signer->requester_id !== auth()->id() && $document->user_id !== auth()->id()) {
             abort(403, 'Anda tidak berhak membatalkan permintaan ini.');
         }
 
-        // 4. Hapus data permintaan
         $signer->delete();
 
-        // 5. Jika setelah dihapus tidak ada lagi riwayat permintaan pada dokumen ini, 
-        // kembalikan status dokumen dari 'forwarded' menjadi 'pending'
         $remainingSigners = DocumentSigner::where('document_id', $document->id)->count();
         if ($remainingSigners === 0 && $document->status === 'forwarded') {
             $document->update(['status' => 'pending']);
         }
 
-        return back()->with('success', 'Permintaan TTE berhasil ditarik kembali/dibatalkan.');
+        return flash_success('Permintaan TTE berhasil ditarik kembali/dibatalkan.');
     }
 
     public function update(Request $request, Document $document)
     {
-        // Pastikan dokumen milik user yang login
         if ($document->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
         }
 
         $request->validate([
             'title' => 'required|string|max:255',
-            'file'  => 'nullable|file|mimes:pdf|max:10240', // Maks 10MB
+            'file'  => 'nullable|file|mimes:pdf|max:10240',
         ]);
 
         $document->title = $request->title;
 
-        // Jika user mencoba mengunggah file baru
         if ($request->hasFile('file')) {
-            // Blokir jika status bukan pending
             if ($document->status !== 'pending') {
-                return back()->withErrors(['message' => 'File fisik tidak dapat diubah karena dokumen sudah diproses atau dibatalkan.']);
+                return flash_error('File fisik tidak dapat diubah karena dokumen sudah diproses atau dibatalkan.');
             }
 
-            // Hapus file lama dari storage
             if ($document->file_path) {
                 Storage::disk('public')->delete($document->file_path);
             }
 
-            // Simpan file baru
             $path = $request->file('file')->store('documents', 'public');
             $document->file_path = $path;
         }
 
         $document->save();
 
-        return back()->with('success', 'Dokumen berhasil diperbarui.');
+        return flash_success('Dokumen berhasil diperbarui.');
     }
 
     public function destroy(Document $document)
@@ -411,21 +383,19 @@ class DocumentController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // Kunci utama: Hanya bisa hapus jika status pending
         if ($document->status !== 'pending') {
-            return back()->withErrors(['message' => 'Dokumen yang sudah diproses tidak dapat dihapus dari sistem.']);
+            return flash_error('Dokumen yang sudah diproses tidak dapat dihapus dari sistem.');
         }
 
-        // Bersihkan file fisik untuk menghemat storage
         if ($document->file_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($document->file_path);
+            Storage::disk('public')->delete($document->file_path);
         }
         if ($document->signed_file_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($document->signed_file_path);
+            Storage::disk('public')->delete($document->signed_file_path);
         }
 
         $document->delete();
 
-        return back()->with('success', 'Dokumen berhasil dihapus secara permanen.');
+        return flash_success('Dokumen berhasil dihapus secara permanen.');
     }
 }

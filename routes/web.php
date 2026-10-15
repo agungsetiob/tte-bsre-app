@@ -61,7 +61,6 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     Route::post('/documents/{document}/reject-sign', [DocumentController::class, 'rejectSign'])->name('documents.rejectSign');
 
     // Proses TTE
-    Route::get('/documents/{document}/sign', [TteController::class, 'showSignPage'])->name('documents.showSign');
     Route::post('/documents/{document}/sign', [TteController::class, 'sign'])->name('documents.sign');
     Route::post('/documents/batch-sign', [TteController::class, 'batchSign'])->name('documents.batch_sign');
 

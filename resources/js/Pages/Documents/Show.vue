@@ -31,8 +31,6 @@ const props = defineProps<{
 
 const page = usePage();
 const authUser = computed(() => (page.props.auth as any).user);
-const flashSuccess = computed(() => (page.props.flash as any)?.success);
-const errorMessage = computed(() => (page.props.errors as any)?.message);
 
 const searchQuery = ref('');
 const searchResults = ref<Array<any>>([]);
@@ -265,21 +263,6 @@ const signerStatusMeta = (s: string): SignerStatusMeta => {
         <div
             class="mx-auto w-full max-w-8xl space-y-5 px-5 py-8 text-[#0F2A2E] md:px-8"
         >
-            <!-- Notifikasi -->
-            <div
-                v-if="flashSuccess"
-                class="flex items-start gap-3 rounded-2xl border border-[#BCE5DA] bg-[#EAF7F3] p-4 text-sm text-[#0B7563] shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
-            >
-                <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0" />
-                <span class="font-medium">{{ flashSuccess }}</span>
-            </div>
-            <div
-                v-if="errorMessage"
-                class="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
-            >
-                <ShieldAlert class="mt-0.5 h-4 w-4 shrink-0" />
-                <span class="font-medium">{{ errorMessage }}</span>
-            </div>
 
             <!-- Main grid -->
             <div

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\BsreService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Services\BsreService; // Tambahkan ini
 
 class AdminController extends Controller
 {
@@ -16,10 +16,10 @@ class AdminController extends Controller
         // 1. Filter Pencarian (Nama, Email, NIK)
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('nik', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('nik', 'like', "%{$search}%");
             });
         }
 
@@ -37,7 +37,7 @@ class AdminController extends Controller
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
-            'filters' => $request->only(['search', 'is_active', 'bsre_status'])
+            'filters' => $request->only(['search', 'is_active', 'bsre_status']),
         ]);
     }
 
@@ -50,13 +50,13 @@ class AdminController extends Controller
 
         try {
             $response = $bsreService->checkUserStatus($user->nik);
-            
+
             // 1. Tangani Respon Berhasil (HTTP 200)
             if ($response && $response->successful()) {
                 $status = $response->json('status') ?? 'UNKNOWN';
-                
+
                 $user->update(['bsre_status' => $status]);
-                
+
                 return response()->json(['status' => $status]);
             }
 
@@ -76,7 +76,6 @@ class AdminController extends Controller
             }
 
             return response()->json(['status' => 'ERROR_KONEKSI'], 500);
-            
         } catch (\Exception $e) {
             // Tangani jika server down / timeout
             return response()->json(['status' => 'TIDAK_DAPAT_TERHUBUNG'], 500);
@@ -85,17 +84,16 @@ class AdminController extends Controller
 
     public function toggleActive(User $user)
     {
-        // Mencegah admin menonaktifkan akunnya sendiri
         if ($user->id === auth()->id()) {
-            return back()->withErrors(['message' => 'Anda tidak dapat menonaktifkan akun Anda sendiri.']);
+            return flash_error('Anda tidak dapat menonaktifkan akun Anda sendiri.');
         }
 
         $user->update([
-            'is_active' => !$user->is_active
+            'is_active' => ! $user->is_active,
         ]);
 
         $status = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
-        
-        return back()->with('success', "Akun {$user->name} berhasil {$status}.");
+
+        return flash_success("Akun {$user->name} berhasil {$status}.");
     }
 }

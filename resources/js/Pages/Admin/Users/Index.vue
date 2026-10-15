@@ -5,7 +5,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import {
     ShieldCheck,
     User as UserIcon,
-    CheckCircle2,
     XCircle,
     Search,
     Filter,
