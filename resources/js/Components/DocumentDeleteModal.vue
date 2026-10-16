@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
-import { Trash2 } from 'lucide-vue-next';
+import { Loader, Trash2 } from 'lucide-vue-next';
 
 const props = defineProps<{ show: boolean; document: any }>();
 const emit = defineEmits(['close']);
@@ -33,7 +33,8 @@ const submit = () => {
 
             <div class="flex justify-end gap-2 border-t border-[#EEF4F2] pt-5 mt-5">
                 <button type="button" @click="emit('close')" class="rounded-xl border border-[#D9E6E3] bg-white px-4 py-2 text-sm font-semibold text-[#4A6572] transition-colors hover:bg-[#F2FBF8]">Batal</button>
-                <button type="button" @click="submit" :disabled="form.processing" class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(225,29,72,.8)] transition-all hover:bg-rose-700 disabled:opacity-50">
+                <button type="button" @click="submit" :disabled="form.processing" class="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(225,29,72,.8)] transition-all hover:bg-rose-700 disabled:opacity-50">
+                    <Loader v-if="form.processing" class="h-4 w-4 animate-spin" />
                     {{ form.processing ? 'Menghapus...' : 'Ya, Hapus Dokumen' }}
                 </button>
             </div>

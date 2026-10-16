@@ -11,6 +11,7 @@ import {
     Trash2,
     CheckCircle,
     XCircle,
+    Loader
 } from 'lucide-vue-next';
 
 interface ClassificationRow {
@@ -25,6 +26,9 @@ defineProps<{ classifications: ClassificationRow[] }>();
 // ---- Form modal state ----
 const showFormModal = ref(false);
 const editingItem = ref<ClassificationRow | null>(null);
+
+const togglingId = ref<number | null>(null);
+
 
 const openCreate = () => {
     editingItem.value = null;
@@ -63,9 +67,14 @@ const confirmDelete = () => {
     });
 };
 
-// ---- Inline toggle (tetap di halaman induk, bukan modal) ----
 const toggleStatus = (id: number) => {
-    router.patch(route('admin.classifications.toggle', id), {}, { preserveScroll: true });
+    togglingId.value = id;
+    router.patch(route('admin.classifications.toggle', id), {}, { 
+        preserveScroll: true,
+        onFinish: () => {
+                togglingId.value = null;
+            },
+        });
 };
 </script>
 
@@ -114,11 +123,31 @@ const toggleStatus = (id: number) => {
                             <td class="px-6 py-4 text-right">
                                 <button
                                     @click="toggleStatus(item.id)"
-                                    class="mr-2 rounded px-2 py-1 text-xs font-medium transition-colors"
-                                    :class="item.is_active ? 'text-slate-400 hover:text-amber-600' : 'text-slate-400 hover:text-green-600'"
+                                    :disabled="togglingId === item.id"
+                                    class="p-1.5"
+                                    :class="[
+                                        item.is_active
+                                            ? 'text-slate-400 hover:text-amber-600'
+                                            : 'text-slate-400 hover:text-green-600',
+                                        togglingId === item.id
+                                            ? 'cursor-not-allowed opacity-50'
+                                            : ''
+                                    ]"
                                 >
-                                    <XCircle v-if="item.is_active" class="h-4 w-4" />
-                                    <CheckCircle v-else class="h-4 w-4" />
+                                    <Loader
+                                        v-if="togglingId === item.id"
+                                        class="h-4 w-4 animate-spin text-blue-700"
+                                    />
+
+                                    <XCircle
+                                        v-else-if="item.is_active"
+                                        class="h-4 w-4"
+                                    />
+
+                                    <CheckCircle
+                                        v-else
+                                        class="h-4 w-4"
+                                    />
                                 </button>
                                 <button @click="openEdit(item)" class="p-1.5 text-slate-400 hover:text-blue-600">
                                     <PenLine class="h-4 w-4" />

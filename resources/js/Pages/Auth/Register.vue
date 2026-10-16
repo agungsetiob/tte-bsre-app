@@ -97,15 +97,6 @@ const confirmMatches = computed(
                         <User class="h-3.5 w-3.5" />
                         Pendaftaran Pegawai
                     </span>
-                    <h1
-                        class="font-display mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#0F2A2E] sm:text-[2rem]"
-                    >
-                        Buat akun baru.
-                    </h1>
-                    <p class="mt-2 text-sm text-[#4A6572]">
-                        Daftarkan diri Anda untuk mulai mengelola dan menandatangani
-                        dokumen rumah sakit secara elektronik.
-                    </p>
                 </div>
 
                 <!-- Form -->
@@ -458,7 +449,7 @@ const confirmMatches = computed(
 
         <!-- ============ RIGHT : BRAND PANEL ============ -->
         <aside
-            class="relative hidden overflow-hidden bg-gradient-to-br from-[#0F2A2E] via-[#0B7563] to-[#0B8570] p-10 lg:flex lg:flex-col lg:justify-between xl:p-14"
+            class="relative hidden overflow-hidden bg-gradient-to-br from-[#0F2A2E] via-[#0B7563] to-[#0B8570] lg:block"
         >
             <!-- decorative overlay -->
             <div
@@ -471,85 +462,23 @@ const confirmMatches = computed(
                         repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 88px);
                 "
             />
+
+            <!-- logo center horizontal & vertical -->
             <div
-                class="pointer-events-none absolute -right-24 top-1/3 h-96 w-96 rounded-full bg-[#0B8570] opacity-40 blur-3xl"
-            />
-
-            <!-- top -->
-            <div class="relative z-10 text-right">
-                <p
-                    class="text-[11px] font-bold uppercase tracking-[0.16em] text-white/60"
-                >
-                    Sudah punya akun?
-                </p>
-                <Link
-                    :href="route('login')"
-                    class="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition-colors hover:bg-white/20"
-                >
-                    Masuk ke Akun
-                    <ArrowRight class="h-4 w-4" />
-                </Link>
+                class="absolute inset-0 z-10 flex items-center justify-center px-8 xl:px-14"
+            >
+                <img
+                    src="/logo.png"
+                    alt="HELODOCS"
+                    class="h-16 w-auto brightness-0 invert xl:h-20"
+                />
             </div>
 
-            <!-- middle : value props -->
-            <div class="relative z-10 space-y-5">
-                <div class="flex items-start gap-3.5">
-                    <span
-                        class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white backdrop-blur"
-                    >
-                        <FileSignature class="h-5 w-5" />
-                    </span>
-                    <div>
-                        <p class="font-display text-sm font-bold text-white">
-                            Kelola dokumen digital
-                        </p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-white/65">
-                            Unggah, kelola, dan pantau seluruh dokumen rumah sakit
-                            dalam satu dasbor.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex items-start gap-3.5">
-                    <span
-                        class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white backdrop-blur"
-                    >
-                        <BadgeCheck class="h-5 w-5" />
-                    </span>
-                    <div>
-                        <p class="font-display text-sm font-bold text-white">
-                            Tanda tangan sah
-                        </p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-white/65">
-                            Sertifikat elektronik BSrE BSSN yang diakui secara
-                            hukum di Indonesia.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex items-start gap-3.5">
-                    <span
-                        class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white backdrop-blur"
-                    >
-                        <QrCode class="h-5 w-5" />
-                    </span>
-                    <div>
-                        <p class="font-display text-sm font-bold text-white">
-                            Verifikasi publik
-                        </p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-white/65">
-                            Penerima dapat mengecek keaslian dokumen lewat scan QR
-                            dalam hitungan detik.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- bottom : BSrE -->
-            <div class="relative z-10">
-                <div
-                    class="flex items-center gap-4 rounded-2xl border border-white/12 bg-white/[0.06] p-4 backdrop-blur-sm"
-                >
+            <!-- bottom : BSrE badge -->
+            <div
+                class="absolute inset-x-10 bottom-10 z-20 xl:bottom-14 xl:inset-x-14"
+            >
+                <div class="flex items-center justify-center p-4 backdrop-blur-sm">
                     <div class="shrink-0 rounded-xl bg-white/95 p-2.5">
                         <img
                             src="/bsre-logo.png"
@@ -557,20 +486,9 @@ const confirmMatches = computed(
                             class="h-9 w-auto"
                         />
                     </div>
-                    <div class="min-w-0">
-                        <p
-                            class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/90"
-                        >
-                            <ShieldCheck class="h-3.5 w-3.5 text-[#E29A2D]" />
-                            Terintegrasi Resmi
-                        </p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-white/60">
-                            Balai Sertifikasi Elektronik — BSSN
-                        </p>
-                    </div>
                 </div>
 
-                <p class="mt-6 text-[11px] text-white/40">
+                <p class="mt-6 text-center text-[11px] text-white">
                     &copy; {{ new Date().getFullYear() }} RSUD dr. H. Andi Abdurrahman Noor
                 </p>
             </div>

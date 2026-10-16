@@ -74,7 +74,7 @@ const stateMeta = computed<StateMeta>(() => {
             Icon: ShieldAlert,
             title: "Pengecekan Tertunda",
             subtitle:
-                "Gagal terhubung ke server BSrE. Menampilkan data dari sistem lokal.",
+                "Gagal terhubung ke server BSrE",
         };
     }
 

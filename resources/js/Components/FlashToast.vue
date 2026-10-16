@@ -11,7 +11,7 @@ interface ToastItem {
     message: string;
 }
 
-const DURATION = 7090;
+const DURATION = 7290;
 
 const page = usePage();
 const toasts = ref<ToastItem[]>([]);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
-import { UploadCloud } from 'lucide-vue-next';
+import { Loader, UploadCloud } from 'lucide-vue-next';
 
 const props = defineProps<{ show: boolean }>();
 const emit = defineEmits(['close']);
@@ -49,7 +49,8 @@ const submit = () => {
 
                 <div class="flex justify-end gap-2 border-t border-[#EEF4F2] pt-4">
                     <button type="button" @click="emit('close')" class="rounded-xl border border-[#D9E6E3] bg-white px-4 py-2 text-sm font-semibold text-[#4A6572] transition-colors hover:bg-[#F2FBF8]">Batal</button>
-                    <button type="submit" :disabled="form.processing" class="rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:bg-[#086B5B] disabled:opacity-50">
+                    <button type="submit" :disabled="form.processing" class="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:bg-[#086B5B] disabled:opacity-50">
+                        <Loader v-if="form.processing" class="h-4 w-4 animate-spin"/>
                         {{ form.processing ? 'Mengunggah...' : 'Unggah Dokumen' }}
                     </button>
                 </div>

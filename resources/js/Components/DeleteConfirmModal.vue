@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Modal from '@/Components/Modal.vue';
-import { AlertTriangle } from 'lucide-vue-next';
+import { AlertTriangle, Loader } from 'lucide-vue-next';
 
 const props = withDefaults(
     defineProps<{
@@ -58,8 +58,9 @@ const hasDescription = computed(() => !!props.description);
                     type="button"
                     :disabled="processing"
                     @click="$emit('confirm')"
-                    class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(225,29,72,.8)] transition-all hover:bg-rose-700 disabled:opacity-50"
+                    class="flex justify-center items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(225,29,72,.8)] transition-all hover:bg-rose-700 disabled:opacity-50"
                 >
+                    <Loader class="h-4 w-4 animate-spin" />
                     {{ confirmLabel }}
                 </button>
             </div>

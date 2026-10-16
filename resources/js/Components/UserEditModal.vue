@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useForm } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
-import { UserCog } from 'lucide-vue-next';
+import { Loader, UserCog } from 'lucide-vue-next';
 import { watch } from 'vue';
 
 const props = defineProps<{ 
@@ -62,7 +62,8 @@ const submit = () => {
 
                 <div class="flex justify-end gap-2 border-t border-slate-100 pt-4 mt-2">
                     <button type="button" @click="emit('close')" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-                    <button type="submit" :disabled="form.processing" class="rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white hover:bg-[#086B5B] disabled:opacity-50">
+                    <button type="submit" :disabled="form.processing" class="flex justify-center items-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white hover:bg-[#086B5B] disabled:opacity-50">
+                        <Loader v-if="form.processing" class="h-4 w-4 animate-spin" />
                         {{ form.processing ? 'Menyimpan...' : 'Simpan Perubahan' }}
                     </button>
                 </div>

@@ -2,6 +2,7 @@
 import { useForm } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
 import { watch } from 'vue';
+import { Loader } from 'lucide-vue-next';
 
 interface ClassificationRow {
     id: number;
@@ -101,8 +102,9 @@ const submit = () => {
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#086B5B] disabled:opacity-50"
+                        class="inline-flex justify-center items-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#086B5B] disabled:opacity-50"
                     >
+                        <Loader v-if="form.processing" class="h-4 w-4 animate-spin" />
                         Simpan
                     </button>
                 </div>

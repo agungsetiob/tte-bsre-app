@@ -7,7 +7,8 @@ import {
     ClipboardList,
     Copy, 
     Check,
-    SendHorizontal
+    SendHorizontal,
+    Loader
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -129,6 +130,7 @@ const copyToClipboard = (text: string, id: number) => {
                             </div>
 
                             <button type="submit" :disabled="form.processing" class="w-full mt-2 inline-flex justify-center items-center gap-2 rounded-xl bg-[#0B8570] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B] disabled:opacity-50">
+                                <Loader v-if="form.processing" class="h-4 w-4 animate-spin" />
                                 {{ form.processing ? 'Memproses...' : 'Generate Nomor' }}
                                 <SendHorizontal class="h-4 w-4" />
                             </button>

@@ -6,11 +6,10 @@ import {
     ShieldCheck,
     ArrowRight,
     ScanLine,
-    FileSignature,
-    QrCode,
     AlertCircle,
     Eye,
     EyeOff,
+    Loader,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
@@ -42,7 +41,7 @@ const submit = () => {
     <div class="grid min-h-screen bg-[#F8FCFB] font-sans text-[#0F2A2E] lg:grid-cols-[1.1fr_1fr]">
         <!-- ============ LEFT : BRAND PANEL ============ -->
         <aside
-            class="relative hidden overflow-hidden bg-gradient-to-br from-[#0F2A2E] via-[#0B7563] to-[#0B8570] p-10 lg:flex lg:flex-col lg:justify-between xl:p-14"
+            class="relative hidden overflow-hidden bg-gradient-to-br from-[#0F2A2E] via-[#0B7563] to-[#0B8570] lg:block"
         >
             <!-- decorative overlay -->
             <div
@@ -56,81 +55,22 @@ const submit = () => {
                 "
             />
 
-            <!-- halo glow -->
+            <!-- logo center horizontal & vertical -->
             <div
-                class="pointer-events-none absolute -right-24 top-1/3 h-96 w-96 rounded-full bg-[#0B8570] opacity-40 blur-3xl"
-            />
-
-            <!-- top : logo -->
-            <div class="relative z-10">
+                class="absolute inset-0 z-10 flex items-center justify-center px-8 xl:px-14"
+            >
                 <img
                     src="/logo.png"
                     alt="HELODOCS"
-                    class="h-14 w-auto brightness-0 invert xl:h-20"
+                    class="h-16 w-auto brightness-0 invert xl:h-20"
                 />
-                <p
-                    class="mt-4 max-w-sm text-sm leading-relaxed text-white/70"
-                >
-                    Platform Tanda Tangan & Verifikasi Dokumen Elektronik Rumah Sakit.
-                </p>
-            </div>
-
-            <!-- middle : value props -->
-            <div class="relative z-10 space-y-5">
-                <div class="flex items-start gap-3.5">
-                    <span
-                        class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white backdrop-blur"
-                    >
-                        <FileSignature class="h-5 w-5" />
-                    </span>
-                    <div>
-                        <p class="font-display text-sm font-bold text-white">
-                            Tanda tangan sah
-                        </p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-white/65">
-                            Sertifikat elektronik BSrE BSSN yang diakui secara hukum.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex items-start gap-3.5">
-                    <span
-                        class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white backdrop-blur"
-                    >
-                        <QrCode class="h-5 w-5" />
-                    </span>
-                    <div>
-                        <p class="font-display text-sm font-bold text-white">
-                            Verifikasi instan
-                        </p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-white/65">
-                            Cek keaslian dokumen lewat scan QR dalam hitungan detik.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex items-start gap-3.5">
-                    <span
-                        class="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/15 bg-white/10 text-white backdrop-blur"
-                    >
-                        <ShieldCheck class="h-5 w-5" />
-                    </span>
-                    <div>
-                        <p class="font-display text-sm font-bold text-white">
-                            Aman & terintegrasi
-                        </p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-white/65">
-                            Seluruh alur dokumen tercatat rapi dan dapat diaudit.
-                        </p>
-                    </div>
-                </div>
             </div>
 
             <!-- bottom : BSrE badge -->
-            <div class="relative z-10">
-                <div
-                    class="flex items-center gap-4 rounded-2xl border border-white/12 bg-white/[0.06] p-4 backdrop-blur-sm"
-                >
+            <div
+                class="absolute inset-x-10 bottom-10 z-20 xl:bottom-14 xl:inset-x-14"
+            >
+                <div class="flex items-center justify-center p-4 backdrop-blur-sm">
                     <div class="shrink-0 rounded-xl bg-white/95 p-2.5">
                         <img
                             src="/bsre-logo.png"
@@ -138,18 +78,9 @@ const submit = () => {
                             class="h-9 w-auto"
                         />
                     </div>
-                    <div class="min-w-0">
-                        <p class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/90">
-                            <ShieldCheck class="h-3.5 w-3.5 text-[#E29A2D]" />
-                            Terintegrasi Resmi
-                        </p>
-                        <p class="mt-0.5 text-xs leading-relaxed text-white/60">
-                            Balai Sertifikasi Elektronik — BSSN
-                        </p>
-                    </div>
                 </div>
 
-                <p class="mt-6 text-[11px] text-white/40">
+                <p class="mt-6 text-center text-[11px] text-white">
                     &copy; {{ new Date().getFullYear() }} RSUD dr. H. Andi Abdurrahman Noor
                 </p>
             </div>
@@ -171,11 +102,13 @@ const submit = () => {
                         <ShieldCheck class="h-3.5 w-3.5" />
                         Ruang Pengelola
                     </span>
+
                     <h1
                         class="font-display mt-4 text-3xl font-extrabold leading-tight tracking-tight text-[#0F2A2E] sm:text-[2rem]"
                     >
-                        Selamat datang kembali.
+                        Selamat datang
                     </h1>
+
                     <p class="mt-2 text-sm text-[#4A6572]">
                         Masuk untuk mengelola, menandatangani, dan memverifikasi dokumen
                         rumah sakit.
@@ -201,6 +134,7 @@ const submit = () => {
                         >
                             Email
                         </label>
+
                         <div class="relative mt-2">
                             <Mail
                                 class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
@@ -216,6 +150,7 @@ const submit = () => {
                                 class="block w-full rounded-xl border border-[#D9E6E3] bg-white py-2.5 pl-10 pr-3 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
                             />
                         </div>
+
                         <p v-if="form.errors.email" class="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
                             <AlertCircle class="h-3 w-3" />
                             {{ form.errors.email }}
@@ -231,6 +166,7 @@ const submit = () => {
                             >
                                 Password
                             </label>
+
                             <Link
                                 v-if="canResetPassword"
                                 :href="route('password.request')"
@@ -239,6 +175,7 @@ const submit = () => {
                                 Lupa password?
                             </Link>
                         </div>
+
                         <div class="relative mt-2">
                             <Lock
                                 class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
@@ -252,6 +189,7 @@ const submit = () => {
                                 placeholder="••••••••"
                                 class="block w-full rounded-xl border border-[#D9E6E3] bg-white py-2.5 pl-10 pr-11 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
                             />
+
                             <button
                                 type="button"
                                 @click="showPassword = !showPassword"
@@ -262,6 +200,7 @@ const submit = () => {
                                 <EyeOff v-else class="h-4 w-4" />
                             </button>
                         </div>
+
                         <p v-if="form.errors.password" class="mt-1.5 flex items-center gap-1 text-xs text-rose-600">
                             <AlertCircle class="h-3 w-3" />
                             {{ form.errors.password }}
@@ -286,10 +225,12 @@ const submit = () => {
                         :disabled="form.processing"
                         class="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B8570] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
                     >
+                        <Loader v-if="form.processing" class="h-4 w-4 animate-spin" />
                         <span>
                             {{ form.processing ? 'Memproses…' : 'Masuk' }}
                         </span>
                         <ArrowRight
+                            v-if="!form.processing"
                             class="h-4 w-4 transition-transform group-hover:translate-x-0.5"
                         />
                     </button>

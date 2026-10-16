@@ -11,7 +11,8 @@ import {
     PenLine,
     Trash2,
     XCircle,
-    CheckCircle
+    CheckCircle,
+    Loader
 } from 'lucide-vue-next';
 
 interface LetterType {
@@ -63,13 +64,20 @@ const confirmDelete = () => {
         },
     });
 };
-
+const togglingId = ref<number | null>(null);
 const toggleStatus = (id: number) => {
-    router.patch(route('admin.letter-types.toggle', id), {}, { preserveScroll: true });
+    togglingId.value = id;
+    router.patch(route('admin.letter-types.toggle', id), {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            togglingId.value = null;
+        },
+    });
 };
 </script>
 
 <template>
+
     <Head title="Master Jenis Surat" />
 
     <AuthenticatedLayout>
@@ -83,10 +91,8 @@ const toggleStatus = (id: number) => {
                         Kelola jenis-jenis surat yang dapat dibuat.
                     </p>
                 </div>
-                <button
-                    @click="openCreate"
-                    class="flex items-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white hover:bg-[#086B5B]"
-                >
+                <button @click="openCreate"
+                    class="flex items-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white hover:bg-[#086B5B]">
                     <Plus class="h-4 w-4" /> Tambah Jenis Surat
                 </button>
             </div>
@@ -99,17 +105,14 @@ const toggleStatus = (id: number) => {
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-500">Kode</th>
-                            <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-500">Nama Jenis Surat</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-500">Nama Jenis Surat
+                            </th>
                             <th class="px-6 py-3 text-left text-xs font-bold uppercase text-slate-500">Status</th>
                             <th class="px-6 py-3 text-right text-xs font-bold uppercase text-slate-500">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        <tr
-                            v-for="item in letterTypes"
-                            :key="item.id"
-                            class="hover:bg-slate-50"
-                        >
+                        <tr v-for="item in letterTypes" :key="item.id" class="hover:bg-slate-50">
                             <td class="px-6 py-4 font-mono text-sm font-bold text-slate-700">
                                 {{ item.code }}
                             </td>
@@ -119,36 +122,31 @@ const toggleStatus = (id: number) => {
                                 </div>
                             </td>
                             <td class="px-6 py-4">
-                                <span v-if="item.is_active" class="inline-flex rounded-full bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">Aktif</span>
-                                <span v-else class="inline-flex rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold text-rose-700">Nonaktif</span>
+                                <span v-if="item.is_active"
+                                    class="inline-flex rounded-full bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">Aktif</span>
+                                <span v-else
+                                    class="inline-flex rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold text-rose-700">Nonaktif</span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <div class="flex justify-end gap-2">
-                                    <button
-                                        @click="toggleStatus(item.id)"
-                                        class="mr-2 rounded px-2 py-1 text-xs font-medium transition-colors"
-                                        :class="
-                                            item.is_active
-                                                ? 'text-slate-400 hover:text-amber-600'
-                                                : 'text-slate-400 hover:text-green-600'
-                                        "
-                                    >
-                                        <XCircle v-if="item.is_active" class="h-4 w-4" />
-                                        <CheckCircle v-else class="h-4 w-4" />
-                                        </button>
-                                    <button
-                                        @click="openEdit(item)"
-                                        class="p-1.5 text-slate-400 hover:text-blue-600"
-                                    >
-                                        <PenLine class="h-4 w-4" />
-                                    </button>
-                                    <button
-                                        @click="openDelete(item)"
-                                        class="ml-1 p-1.5 text-slate-400 hover:text-red-600"
-                                    >
-                                        <Trash2 class="h-4 w-4" />
-                                    </button>
-                                </div>
+                                <button @click="toggleStatus(item.id)" :disabled="togglingId === item.id" class="p-1.5"
+                                    :class="[
+                                        item.is_active
+                                            ? 'text-slate-400 hover:text-amber-600'
+                                            : 'text-slate-400 hover:text-green-600',
+                                        togglingId === item.id
+                                            ? 'cursor-not-allowed opacity-50'
+                                            : ''
+                                    ]">
+                                    <Loader v-if="togglingId === item.id" class="h-4 w-4 animate-spin text-blue-700" />
+                                    <XCircle v-else-if="item.is_active" class="h-4 w-4" />
+                                    <CheckCircle v-else class="h-4 w-4" />
+                                </button>
+                                <button @click="openEdit(item)" class="p-1.5 text-slate-400 hover:text-blue-600">
+                                    <PenLine class="h-4 w-4" />
+                                </button>
+                                <button @click="openDelete(item)" class="ml-1 p-1.5 text-slate-400 hover:text-red-600">
+                                    <Trash2 class="h-4 w-4" />
+                                </button>
                             </td>
                         </tr>
                     </tbody>
@@ -156,19 +154,10 @@ const toggleStatus = (id: number) => {
             </div>
         </div>
 
-        <LetterTypeFormModal
-            :show="showFormModal"
-            :item="editingItem"
-            @close="showFormModal = false"
-        />
+        <LetterTypeFormModal :show="showFormModal" :item="editingItem" @close="showFormModal = false" />
 
-        <DeleteConfirmModal
-            :show="showDeleteModal"
-            title="Hapus Jenis Surat"
+        <DeleteConfirmModal :show="showDeleteModal" title="Hapus Jenis Surat"
             :description="deleteTarget ? `Hapus '${deleteTarget.name}'? Tindakan ini tidak dapat dibatalkan.` : ''"
-            :processing="isDeleting"
-            @close="closeDelete"
-            @confirm="confirmDelete"
-        />
+            :processing="isDeleting" @close="closeDelete" @confirm="confirmDelete" />
     </AuthenticatedLayout>
 </template>

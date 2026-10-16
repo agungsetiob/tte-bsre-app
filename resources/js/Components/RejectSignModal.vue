@@ -2,7 +2,7 @@
 import { computed, watch } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
-import { AlertTriangle } from "lucide-vue-next";
+import { AlertTriangle, Loader } from "lucide-vue-next";
 
 const props = defineProps<{
     show: boolean;
@@ -109,8 +109,9 @@ const serverError = computed(
                     <button
                         type="submit"
                         :disabled="rejectForm.processing"
-                        class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(225,29,72,.5)] transition-all hover:-translate-y-0.5 hover:bg-rose-700 disabled:opacity-50 disabled:hover:translate-y-0"
+                        class="flex justify-center items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(225,29,72,.5)] transition-all hover:-translate-y-0.5 hover:bg-rose-700 disabled:opacity-50 disabled:hover:translate-y-0"
                     >
+                        <Loader v-if="rejectForm.processing" class="h-4 w-4 animate-spin" />
                         {{
                             rejectForm.processing
                                 ? "Mengirim…"

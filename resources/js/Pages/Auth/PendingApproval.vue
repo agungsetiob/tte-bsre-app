@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import { Clock, LogOut, ShieldCheck } from 'lucide-vue-next';
 
 const form = useForm({});
@@ -56,7 +56,7 @@ const logout = () => {
         </div>
         
         <div class="mt-8 text-xs text-slate-400">
-            &copy; 2026 Balai Sertifikasi Elektronik (BSrE) &bull; BSSN
+            &copy; 2026 RSUD dr. H. Andi Abdurrahman Noor
         </div>
     </div>
 </template>

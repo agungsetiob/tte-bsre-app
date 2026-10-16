@@ -2,7 +2,7 @@
 import { computed, watch } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import Modal from "./Modal.vue";
-import { KeyRound, Layers, AlertCircle } from "lucide-vue-next";
+import { KeyRound, Layers, AlertCircle, Loader } from "lucide-vue-next";
 
 const props = defineProps<{
     show: boolean;
@@ -148,8 +148,9 @@ const serverError = computed(
                     <button
                         type="submit"
                         :disabled="batchForm.processing"
-                        class="rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B] disabled:opacity-50 disabled:hover:translate-y-0"
+                        class="inline-flex rounded-xl items-center justify-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_40px_-24px_rgba(11,133,112,.8)] transition-all hover:-translate-y-0.5 hover:bg-[#086B5B] disabled:opacity-50 disabled:hover:translate-y-0"
                     >
+                        <Loader v-if="batchForm.processing" class="h-4 w-4 animate-spin" />
                         {{
                             batchForm.processing ? "Memproses…" : "Proses Semua"
                         }}

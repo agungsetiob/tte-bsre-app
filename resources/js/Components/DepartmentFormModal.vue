@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/vue3';
 import Modal from '@/Components/Modal.vue';
 import { watch } from 'vue';
 import type { DepartmentRow } from '@/types';
+import { Loader } from 'lucide-vue-next';
 
 const props = defineProps<{
     show: boolean;
@@ -111,8 +112,9 @@ const submit = () => {
                     <button
                         type="submit"
                         :disabled="form.processing"
-                        class="rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#086B5B] disabled:opacity-50"
+                        class="flex justify-center gap-2 items-center rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#086B5B] disabled:opacity-50"
                     >
+                        <Loader v-if="form.processing" class="h-4 w-4 animate-spin" />
                         {{ form.processing ? 'Menyimpan...' : 'Simpan' }}
                     </button>
                 </div>

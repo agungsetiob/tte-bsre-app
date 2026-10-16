@@ -8,7 +8,6 @@ import {
     CircleCheck,
     FileSignature,
     FileText,
-    Info,
     Loader,
     ShieldCheck,
     Upload,

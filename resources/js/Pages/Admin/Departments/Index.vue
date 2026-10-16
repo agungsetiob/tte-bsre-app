@@ -5,7 +5,7 @@ import DepartmentFormModal from '@/Components/DepartmentFormModal.vue';
 import DeleteConfirmModal from '@/Components/DeleteConfirmModal.vue';
 import { ref } from 'vue';
 import type { DepartmentRow } from '@/types';
-import { Building2, Plus, PenLine, Trash2, XCircle, CheckCircle } from 'lucide-vue-next';
+import { Building2, Plus, PenLine, Trash2, XCircle, CheckCircle, Loader } from 'lucide-vue-next';
 
 defineProps<{
     departments: DepartmentRow[];
@@ -15,6 +15,8 @@ defineProps<{
 // ---- Form modal state ----
 const showFormModal = ref(false);
 const editingItem = ref<DepartmentRow | null>(null);
+
+const togglingId = ref<number | null>(null);
 
 const openCreate = () => {
     editingItem.value = null;
@@ -53,13 +55,19 @@ const confirmDelete = () => {
     });
 };
 
-// ---- Inline toggle (tetap di halaman induk) ----
 const toggleStatus = (id: number) => {
-    router.patch(route('admin.departments.toggle', id), {}, { preserveScroll: true });
+    togglingId.value = id;
+    router.patch(route('admin.departments.toggle', id), {}, {
+        preserveScroll: true,
+        onFinish: () => {
+            togglingId.value = null;
+        },
+    });
 };
 </script>
 
 <template>
+
     <Head title="Master Unit Kerja" />
 
     <AuthenticatedLayout>
@@ -69,10 +77,8 @@ const toggleStatus = (id: number) => {
                     <h2 class="font-display text-xl font-bold leading-tight text-slate-800">Master Unit Kerja</h2>
                     <p class="mt-1 text-xs text-slate-500">Kelola hierarki dan kode surat bagian/bidang rumah sakit.</p>
                 </div>
-                <button
-                    @click="openCreate"
-                    class="inline-flex items-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#086B5B]"
-                >
+                <button @click="openCreate"
+                    class="inline-flex items-center gap-2 rounded-xl bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#086B5B]">
                     <Plus class="h-4 w-4" /> Tambah Unit
                 </button>
             </div>
@@ -83,11 +89,26 @@ const toggleStatus = (id: number) => {
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">Nama Unit Kerja</th>
-                            <th class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">Kode Surat</th>
-                            <th class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">Induk (Parent)</th>
-                            <th class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">Status</th>
-                            <th class="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">Aksi</th>
+                            <th
+                                class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                Nama
+                                Unit Kerja</th>
+                            <th
+                                class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                Kode
+                                Surat</th>
+                            <th
+                                class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                Induk
+                                (Parent)</th>
+                            <th
+                                class="px-6 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                Status
+                            </th>
+                            <th
+                                class="px-6 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                Aksi
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 bg-white">
@@ -102,32 +123,40 @@ const toggleStatus = (id: number) => {
                             </td>
                             <td class="px-6 py-4 font-mono text-sm font-bold text-slate-600">{{ dept.code }}</td>
                             <td class="px-6 py-4 text-sm text-slate-500">
-                                <span v-if="dept.parent" class="inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                                <span v-if="dept.parent"
+                                    class="inline-flex rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
                                     {{ dept.parent.name }}
                                 </span>
                                 <span v-else class="text-xs italic text-slate-400">Puncak Hierarki</span>
                             </td>
                             <td class="px-6 py-4">
-                                <span v-if="dept.is_active" class="inline-flex rounded-full bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">Aktif</span>
-                                <span v-else class="inline-flex rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold text-rose-700">Nonaktif</span>
+                                <span v-if="dept.is_active"
+                                    class="inline-flex rounded-full bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">Aktif</span>
+                                <span v-else
+                                    class="inline-flex rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold text-rose-700">Nonaktif</span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <div class="flex justify-end gap-2">
-                                    <button
-                                        @click="toggleStatus(dept.id)"
-                                        class="mr-2 rounded px-2 py-1 text-xs font-medium transition-colors"
-                                        :class="dept.is_active ? 'text-slate-400 hover:text-amber-600' : 'text-slate-400 hover:text-green-600'"
-                                    >
-                                        <XCircle v-if="dept.is_active" class="h-4 w-4" />
-                                        <CheckCircle v-else class="h-4 w-4" />
-                                    </button>
-                                    <button @click="openEdit(dept)" class="p-1.5 text-slate-400 transition-colors hover:text-blue-600">
-                                        <PenLine class="h-4 w-4" />
-                                    </button>
-                                    <button @click="openDelete(dept)" class="p-1.5 text-slate-400 transition-colors hover:text-red-600">
-                                        <Trash2 class="h-4 w-4" />
-                                    </button>
-                                </div>
+                                <button @click="toggleStatus(dept.id)" :disabled="togglingId === dept.id" class="p-1.5"
+                                    :class="[
+                                        dept.is_active
+                                            ? 'text-slate-400 hover:text-amber-600'
+                                            : 'text-slate-400 hover:text-green-600',
+                                        togglingId === dept.id
+                                            ? 'cursor-not-allowed opacity-50'
+                                            : ''
+                                    ]">
+                                    <Loader v-if="togglingId === dept.id" class="h-4 w-4 animate-spin text-blue-700" />
+                                    <XCircle v-else-if="dept.is_active" class="h-4 w-4" />
+                                    <CheckCircle v-else class="h-4 w-4" />
+                                </button>
+                                <button @click="openEdit(dept)"
+                                    class="p-1.5 text-slate-400 transition-colors hover:text-blue-600">
+                                    <PenLine class="h-4 w-4" />
+                                </button>
+                                <button @click="openDelete(dept)"
+                                    class="p-1.5 text-slate-400 transition-colors hover:text-red-600">
+                                    <Trash2 class="h-4 w-4" />
+                                </button>
                             </td>
                         </tr>
                     </tbody>
@@ -135,20 +164,11 @@ const toggleStatus = (id: number) => {
             </div>
         </div>
 
-        <DepartmentFormModal
-            :show="showFormModal"
-            :item="editingItem"
-            :parents="parents"
-            @close="showFormModal = false"
-        />
+        <DepartmentFormModal :show="showFormModal" :item="editingItem" :parents="parents"
+            @close="showFormModal = false" />
 
-        <DeleteConfirmModal
-            :show="showDeleteModal"
-            title="Hapus Unit Kerja"
+        <DeleteConfirmModal :show="showDeleteModal" title="Hapus Unit Kerja"
             :description="deleteTarget ? `Hapus '${deleteTarget.name}'? Tindakan ini tidak dapat dibatalkan.` : ''"
-            :processing="isDeleting"
-            @close="closeDelete"
-            @confirm="confirmDelete"
-        />
+            :processing="isDeleting" @close="closeDelete" @confirm="confirmDelete" />
     </AuthenticatedLayout>
 </template>
