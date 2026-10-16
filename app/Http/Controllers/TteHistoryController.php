@@ -27,7 +27,7 @@ class TteHistoryController extends Controller
                 $q->whereDate('created_at', '<=', $request->date_to);
             })
             ->latest()
-            ->paginate(15)
+            ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Histories/Index', [

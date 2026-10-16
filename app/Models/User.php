@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'nik', 'specimen_path', 'role', 'is_active', 'bsre_status'])]
+#[Fillable(['name', 'email', 'password', 'nik', 'specimen_path', 'role', 'is_active', 'bsre_status', 'department_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -25,6 +25,11 @@ class User extends Authenticatable
     public function tteHistories()
     {
         return $this->hasMany(TteHistory::class);
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
     }
 
     /**

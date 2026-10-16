@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Department;
 use App\Services\BsreService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,7 +12,7 @@ class AdminController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::query();
+        $query = User::with('department');
 
         // 1. Filter Pencarian (Nama, Email, NIK)
         if ($request->filled('search')) {
@@ -38,6 +39,7 @@ class AdminController extends Controller
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
             'filters' => $request->only(['search', 'is_active', 'bsre_status']),
+            'departments' => Department::select('id', 'name')->orderBy('name', 'asc')->get(),
         ]);
     }
 
@@ -95,5 +97,18 @@ class AdminController extends Controller
         $status = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
         return flash_success("Akun {$user->name} berhasil {$status}.");
+    }
+
+    public function update(Request $request, User $user)
+    {
+        $request->validate([
+            'department_id' => 'nullable|exists:departments,id',
+        ]);
+
+        $user->update([
+            'department_id' => $request->department_id,
+        ]);
+
+        return flash_success("Unit Kerja untuk {$user->name} berhasil diperbarui.");
     }
 }

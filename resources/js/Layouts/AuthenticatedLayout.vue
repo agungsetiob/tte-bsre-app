@@ -14,10 +14,14 @@ import {
     ChevronDown,
     LogOut,
     UserCircle2,
+    GraduationCap,
+    Building,
+    ShieldAlert,
+    BookMarked,
+    MonitorCheck
 } from 'lucide-vue-next';
 
 const page = usePage();
-
 const sidebarOpen = ref(false);
 
 const user = computed(() => (page.props.auth as any)?.user ?? { name: '', email: '' });
@@ -32,25 +36,31 @@ const sectionTitle = computed(() => {
     return 'Dashboard';
 });
 
-const userRole = computed(
-    () => (page.props.auth as any)?.user?.role
-);
+const userRole = computed(() => (page.props.auth as any)?.user?.role);
+
+const isAdmin = computed(() => userRole.value === 'admin');
 
 const canAccessMenu = (item: any) => {
-    const hasRoute =
-        !item.requires || route().has(item.requires);
-
-    const hasRole =
-        !item.roles || item.roles.includes(userRole.value);
-
+    const hasRoute = !item.requires || route().has(item.requires);
+    const hasRole = !item.roles || item.roles.includes(userRole.value);
     return hasRoute && hasRole;
 };
 
-const navItems = [
+// Menu umum (semua peran)
+const generalItems = [
     { label: 'Dashboard', route: 'dashboard', pattern: 'dashboard', icon: LayoutDashboard },
     { label: 'Dokumen', route: 'documents.index', pattern: 'documents.*', icon: FileText, requires: 'documents.index' },
     { label: 'Histori', route: 'histories.index', pattern: 'histories.*', icon: History, requires: 'histories.index' },
+    { label: 'SIPESAT', route: 'letter-numbers.index', pattern: 'letter-numbers.*', icon: GraduationCap, requires: 'letter-numbers.index' }
+] as const;
+
+// Menu khusus admin
+const adminItems = [
     { label: 'Pengguna', route: 'admin.users.index', pattern: 'admin.users.*', icon: Users, requires: 'admin.users.index', roles: ['admin'] },
+    { label: 'Unit Kerja', route: 'admin.departments.index', pattern: 'admin.departments.*', icon: Building, requires: 'admin.departments.index', roles: ['admin'] },
+    { label: 'Klasifikasi', route: 'admin.classifications.index', pattern: 'admin.classifications.*', icon: ShieldAlert, requires: 'admin.classifications.index', roles: ['admin'] },
+    { label: 'Jenis Surat', route: 'admin.letter-types.index', pattern: 'admin.letter-types.*', icon: BookMarked, requires: 'admin.letter-types.index', roles: ['admin'] },
+    { label: 'Monitor Nomor Surat', route: 'admin.letter_monitor.index', pattern: 'admin.letter_monitor.*', icon: MonitorCheck, requires: 'admin.letter_monitor.index', roles: ['admin'] }
 ] as const;
 
 const closeSidebar = () => {
@@ -61,6 +71,7 @@ const closeSidebar = () => {
 <template>
     <div class="min-h-screen bg-[#F8FCFB] font-sans text-[#0F2A2E]">
         <FlashToast />
+
         <!-- Backdrop (mobile) -->
         <Transition
             enter-active-class="ease-out duration-200"
@@ -102,40 +113,78 @@ const closeSidebar = () => {
             </div>
 
             <!-- Nav links -->
-            <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+            <nav class="flex-1 space-y-4 overflow-y-auto px-3 py-4">
+                <!-- Group: Menu Utama -->
+                <div>
+                    <p class="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#A8BCC2]">
+                        Menu Utama
+                    </p>
+                    <div class="space-y-1">
+                        <template v-for="item in generalItems" :key="item.label">
+                            <Link
+                                v-if="canAccessMenu(item)"
+                                :href="route(item.route)"
+                                :class="
+                                    route().current(item.pattern)
+                                        ? 'bg-[#EAF7F3] text-[#0B7563]'
+                                        : 'text-[#4A6572] hover:bg-[#F8FCFB] hover:text-[#0F2A2E]'
+                                "
+                                class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
+                                @click="closeSidebar"
+                            >
+                                <component
+                                    :is="item.icon"
+                                    class="h-[18px] w-[18px] shrink-0"
+                                    :class="
+                                        route().current(item.pattern)
+                                            ? 'text-[#0B8570]'
+                                            : 'text-[#6A8593] group-hover:text-[#0B7563]'
+                                    "
+                                />
+                                <span>{{ item.label }}</span>
+                            </Link>
+                        </template>
+                    </div>
+                </div>
 
-                <template v-for="item in navItems" :key="item.label">
-                    <Link
-                        v-if="canAccessMenu(item)"
-                        :href="route(item.route)"
-                        :class="
-                            route().current(item.pattern)
-                                ? 'bg-[#EAF7F3] text-[#0B7563]'
-                                : 'text-[#4A6572] hover:bg-[#F8FCFB] hover:text-[#0F2A2E]'
-                        "
-                        class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
-                        @click="closeSidebar"
-                    >
-                        <component
-                            :is="item.icon"
-                            class="h-[18px] w-[18px] shrink-0"
-                            :class="
-                                route().current(item.pattern)
-                                    ? 'text-[#0B8570]'
-                                    : 'text-[#6A8593] group-hover:text-[#0B7563]'
-                            "
-                        />
-                        <span>{{ item.label }}</span>
-                    </Link>
-                </template>
+                <!-- Group: Manajemen (Admin Only) -->
+                <div v-if="isAdmin">
+                    <p class="px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#A8BCC2]">
+                        Manajemen
+                    </p>
+                    <div class="space-y-1">
+                        <template v-for="item in adminItems" :key="item.label">
+                            <Link
+                                v-if="canAccessMenu(item)"
+                                :href="route(item.route)"
+                                :class="
+                                    route().current(item.pattern)
+                                        ? 'bg-[#EAF7F3] text-[#0B7563]'
+                                        : 'text-[#4A6572] hover:bg-[#F8FCFB] hover:text-[#0F2A2E]'
+                                "
+                                class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all"
+                                @click="closeSidebar"
+                            >
+                                <component
+                                    :is="item.icon"
+                                    class="h-[18px] w-[18px] shrink-0"
+                                    :class="
+                                        route().current(item.pattern)
+                                            ? 'text-[#0B8570]'
+                                            : 'text-[#6A8593] group-hover:text-[#0B7563]'
+                                    "
+                                />
+                                <span>{{ item.label }}</span>
+                            </Link>
+                        </template>
+                    </div>
+                </div>
             </nav>
 
-            <!-- Footer sidebar: BSrE -->
+            <!-- Footer sidebar -->
             <div class="shrink-0 space-y-3 border-t border-[#E9F0EE] p-4">
-                <div
-                    class="rounded-2xl border border-[#DCE8E5] bg-gradient-to-br from-[#F8FCFB] to-[#F1F7F5] p-3.5"
-                >
-                    <div class="flex items-center gap-3 justify-center">
+                <div class="rounded-2xl border border-[#DCE8E5] bg-gradient-to-br from-[#F8FCFB] to-[#F1F7F5] p-3.5">
+                    <div class="flex items-center justify-center gap-3">
                         <img
                             src="/bsre-logo.png"
                             alt="Balai Sertifikasi Elektronik (BSrE) — BSSN"
@@ -143,7 +192,6 @@ const closeSidebar = () => {
                         />
                     </div>
                 </div>
-
                 <p class="text-center text-[10px] leading-relaxed text-[#A8BCC2]">
                     &copy; {{ new Date().getFullYear() }} RSUD dr. H. Andi Abdurrahman Noor
                 </p>
@@ -153,9 +201,7 @@ const closeSidebar = () => {
         <!-- ============ MAIN ============ -->
         <div class="lg:pl-72">
             <!-- Topbar -->
-            <header
-                class="sticky top-0 z-20 border-b border-[#E9F0EE] bg-white/85 backdrop-blur-md"
-            >
+            <header class="sticky top-0 z-20 border-b border-[#E9F0EE] bg-white/85 backdrop-blur-md">
                 <div class="flex h-20 items-center gap-3 px-4 sm:px-6 lg:px-8">
                     <!-- Toggle mobile -->
                     <button
@@ -196,27 +242,19 @@ const closeSidebar = () => {
                                 />
                             </button>
                         </template>
-
                         <template #content>
                             <div class="border-b border-[#EEF4F2] px-4 py-3">
-                                <p
-                                    class="text-[11px] font-semibold uppercase tracking-wider text-[#A8BCC2]"
-                                >
+                                <p class="text-[11px] font-semibold uppercase tracking-wider text-[#A8BCC2]">
                                     Masuk sebagai
                                 </p>
-                                <p
-                                    class="mt-0.5 truncate text-sm font-semibold text-[#0F2A2E]"
-                                >
+                                <p class="mt-0.5 truncate text-sm font-semibold text-[#0F2A2E]">
                                     {{ user.name }}
                                 </p>
                                 <p class="truncate text-xs text-[#6A8593]">
                                     {{ user.email }}
                                 </p>
                             </div>
-                            <DropdownLink
-                                :href="route('profile.edit')"
-                                class="flex items-center gap-2"
-                            >
+                            <DropdownLink :href="route('profile.edit')" class="flex items-center gap-2">
                                 <UserCircle2 class="h-4 w-4" />
                                 Profil Saya
                             </DropdownLink>
@@ -235,10 +273,7 @@ const closeSidebar = () => {
             </header>
 
             <!-- Page Heading (slot) -->
-            <header
-                v-if="$slots.header"
-                class="border-b border-[#E9F0EE] bg-white/60"
-            >
+            <header v-if="$slots.header" class="border-b border-[#E9F0EE] bg-white/60">
                 <div class="px-4 py-6 sm:px-6 lg:px-8">
                     <slot name="header" />
                 </div>

@@ -28,6 +28,7 @@ class ProfileUpdateRequest extends FormRequest
             ],
             'specimen' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
             'nik' => ['nullable', 'string', 'max:255'],
+            'department_id' => ['nullable', 'exists:departments,id'],
         ];
     }
 }

@@ -8,7 +8,6 @@ import {
     CheckCircle2,
     ArrowRight,
     PenLine,
-    Sparkles,
 } from 'lucide-vue-next';
 
 import {
@@ -231,7 +230,6 @@ const formatDate = (dateString: string) => {
                         <span
                             class="hidden items-center gap-1.5 rounded-full border border-[#BCE5DA] bg-[#EAF7F3] px-2.5 py-1 text-[11px] font-semibold text-[#0B7563] sm:inline-flex"
                         >
-                            <Sparkles class="h-3 w-3" />
                             Real-time
                         </span>
                     </div>

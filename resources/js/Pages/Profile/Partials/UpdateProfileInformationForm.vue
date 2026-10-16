@@ -11,11 +11,13 @@ import {
     ImageIcon,
     X,
     ShieldCheck,
+    Building
 } from 'lucide-vue-next';
 
 defineProps<{
     mustVerifyEmail?: Boolean;
     status?: String;
+    departments: Array<{ id: number; name: string }>;
 }>();
 
 const user = usePage().props.auth.user;
@@ -25,6 +27,7 @@ const form = useForm({
     email: user.email,
     specimen: null as File | null,
     nik: user.nik || '',
+    department_id: (user as { department_id?: number | string | null }).department_id || '',
 });
 
 const fileName = ref<string | null>(null);
@@ -144,6 +147,33 @@ const currentSpecimen = computed(() =>
                     <AlertCircle class="h-3 w-3" />
                     {{ form.errors.email }}
                 </p>
+            </div>
+
+            <!-- ============ Unit Kerja ============ -->
+            <div>
+                <label
+                    for="department_id"
+                    class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#6A8593]"
+                >
+                    <Building class="h-3.5 w-3.5" />
+                    Unit Kerja
+                </label>
+                <div class="relative mt-2">
+                    <select
+                        id="department_id"
+                        v-model="form.department_id"
+                        class="block w-full rounded-xl border border-[#D9E6E3] bg-white py-2.5 pl-3 pr-10 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-4 focus:ring-[#0B8570]/10"
+                    >
+                        <option value="">Pilih Unit Kerja</option>
+                        <option
+                            v-for="department in departments"
+                            :key="department.id"
+                            :value="department.id"
+                        >
+                            {{ department.name }}
+                        </option>
+                    </select>
+                </div>
             </div>
 
             <!-- ============ Spesimen Tanda Tangan ============ -->

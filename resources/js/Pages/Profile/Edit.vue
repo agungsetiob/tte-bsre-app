@@ -18,6 +18,7 @@ defineProps<{
     mustVerifyEmail?: boolean;
     status?: string;
     bsreStatus?: string;
+    departments: Array<{ id: number; name: string }>;
 }>();
 
 type StatusMeta = {
@@ -234,6 +235,7 @@ const statusInfo = (s?: string): StatusMeta =>
                         <UpdateProfileInformationForm
                             :must-verify-email="mustVerifyEmail"
                             :status="status"
+                            :departments="departments"
                         />
                     </div>
                 </div>

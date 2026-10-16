@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import axios from 'axios';
-import { Head, useForm, usePage, router, Link } from '@inertiajs/vue3';
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import axios from "axios";
+import { Head, useForm, usePage, router, Link } from "@inertiajs/vue3";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
+import UserEditModal from "@/Components/UserEditModal.vue";
 import {
     ShieldCheck,
     User as UserIcon,
@@ -16,8 +17,9 @@ import {
     UserCheck,
     Loader2,
     AlertCircle,
-} from 'lucide-vue-next';
-import { computed, ref, watch, onMounted } from 'vue';
+    Building,
+} from "lucide-vue-next";
+import { computed, ref, watch, onMounted } from "vue";
 
 const props = defineProps<{
     users: {
@@ -30,6 +32,10 @@ const props = defineProps<{
             is_active: boolean;
             created_at: string;
             bsre_status: string | null;
+            department?: {
+                id: number;
+                name: string;
+            } | null;
         }>;
         links: Array<any>;
     };
@@ -38,54 +44,73 @@ const props = defineProps<{
         is_active?: string;
         bsre_status?: string;
     };
+    departments: Array<{ id: number; name: string }>;
 }>();
 
 const page = usePage();
 
-// ============ FILTER STATE ============
-const search = ref(props.filters.search || '');
-const isActiveFilter = ref(props.filters.is_active ?? '');
-const bsreStatusFilter = ref(props.filters.bsre_status || '');
-
+const search = ref(props.filters.search || "");
+const isActiveFilter = ref(props.filters.is_active ?? "");
+const bsreStatusFilter = ref(props.filters.bsre_status || "");
 let searchTimeout: any = null;
+
 watch(
     [search, isActiveFilter, bsreStatusFilter],
     ([newSearch, newActive, newBsre]) => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             router.get(
-                route('admin.users.index'),
+                route("admin.users.index"),
                 {
                     search: newSearch || undefined,
                     is_active: newActive || undefined,
                     bsre_status: newBsre || undefined,
                 },
-                { preserveState: true, replace: true, preserveScroll: true }
+                { preserveState: true, replace: true, preserveScroll: true },
             );
         }, 500);
-    }
+    },
 );
 
-// ============ TOGGLE STATUS ============
 const form = useForm({});
 const toggleStatus = (userId: number) => {
-    form.patch(route('admin.users.toggle', userId), {
+    form.patch(route("admin.users.toggle", userId), {
         preserveScroll: true,
     });
 };
 
-// ============ BSrE AUTO CHECK ============
 const userStatuses = ref<Record<number, string>>({});
 const isChecking = ref<Record<number, boolean>>({});
 
 const checkStatus = async (userId: number) => {
     isChecking.value[userId] = true;
     try {
-        const response = await axios.post(route('users.check_bsre', userId));
-        userStatuses.value[userId] = response.data.status;
+        const response = await axios.post(
+            route("admin.users.check_bsre", userId),
+            {},
+            {
+                withCredentials: true,
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+            },
+        );
+
+        const payload: any = response?.data;
+        const status =
+            (typeof payload === "string" ? payload : null) ??
+            payload?.status ??
+            payload?.data?.status ??
+            payload?.bsre_status ??
+            null;
+
+        userStatuses.value[userId] = status || "UNKNOWN";
     } catch (error: any) {
         userStatuses.value[userId] =
-            error.response?.data?.status || 'ERROR_KONEKSI';
+            error?.response?.data?.status ||
+            error?.response?.data?.message ||
+            "ERROR_KONEKSI";
     } finally {
         isChecking.value[userId] = false;
     }
@@ -100,6 +125,13 @@ const autoCheckAll = async () => {
     }
 };
 
+const showEditModal = ref(false);
+const userToEdit = ref<any>(null);
+const openEditModal = (user: any) => {
+    userToEdit.value = user;
+    showEditModal.value = true;
+};
+
 onMounted(() => {
     autoCheckAll();
 });
@@ -108,15 +140,15 @@ watch(
     () => props.users.data,
     () => {
         autoCheckAll();
-    }
+    },
 );
 
 // ============ HELPERS ============
 const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
+    return new Date(dateString).toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
     });
 };
 
@@ -129,63 +161,63 @@ type StatusMeta = {
 
 const bsreStatusMap: Record<string, StatusMeta> = {
     ISSUE: {
-        label: 'ISSUE',
-        cls: 'bg-[#EAF7F3] text-[#0B7563] border-[#BCE5DA]',
-        dot: 'bg-[#0B8570]',
+        label: "ISSUE",
+        cls: "bg-[#EAF7F3] text-[#0B7563] border-[#BCE5DA]",
+        dot: "bg-[#0B8570]",
         Icon: ShieldCheck,
     },
     NEW: {
-        label: 'NEW',
-        cls: 'bg-amber-50 text-amber-700 border-amber-200',
-        dot: 'bg-amber-500',
+        label: "NEW",
+        cls: "bg-amber-50 text-amber-700 border-amber-200",
+        dot: "bg-amber-500",
         Icon: AlertCircle,
     },
     RENEW: {
-        label: 'RENEW',
-        cls: 'bg-amber-50 text-amber-700 border-amber-200',
-        dot: 'bg-amber-500',
+        label: "RENEW",
+        cls: "bg-amber-50 text-amber-700 border-amber-200",
+        dot: "bg-amber-500",
         Icon: RefreshCw,
     },
     WAITING_FOR_VERIFICATION: {
-        label: 'WAITING_FOR_VERIFICATION',
-        cls: 'bg-amber-50 text-amber-700 border-amber-200',
-        dot: 'bg-amber-500',
+        label: "WAITING_FOR_VERIFICATION",
+        cls: "bg-amber-50 text-amber-700 border-amber-200",
+        dot: "bg-amber-500",
         Icon: Clock4,
     },
     EXPIRED: {
-        label: 'EXPIRED',
-        cls: 'bg-rose-50 text-rose-700 border-rose-200',
-        dot: 'bg-rose-500',
+        label: "EXPIRED",
+        cls: "bg-rose-50 text-rose-700 border-rose-200",
+        dot: "bg-rose-500",
         Icon: ShieldAlert,
     },
     SUSPEND: {
-        label: 'SUSPEND',
-        cls: 'bg-rose-50 text-rose-700 border-rose-200',
-        dot: 'bg-rose-500',
+        label: "SUSPEND",
+        cls: "bg-rose-50 text-rose-700 border-rose-200",
+        dot: "bg-rose-500",
         Icon: Ban,
     },
     REVOKE: {
-        label: 'REVOKE',
-        cls: 'bg-rose-50 text-rose-700 border-rose-200',
-        dot: 'bg-rose-500',
+        label: "REVOKE",
+        cls: "bg-rose-50 text-rose-700 border-rose-200",
+        dot: "bg-rose-500",
         Icon: XCircle,
     },
     NOT_REGISTERED: {
-        label: 'NOT_REGISTERED',
-        cls: 'bg-slate-50 text-slate-700 border-slate-200',
-        dot: 'bg-slate-400',
+        label: "NOT_REGISTERED",
+        cls: "bg-slate-50 text-slate-700 border-slate-200",
+        dot: "bg-slate-400",
         Icon: AlertCircle,
     },
     NO_CERTIFICATE: {
-        label: 'NO_CERTIFICATE',
-        cls: 'bg-slate-50 text-slate-700 border-slate-200',
-        dot: 'bg-slate-400',
+        label: "NO_CERTIFICATE",
+        cls: "bg-slate-50 text-slate-700 border-slate-200",
+        dot: "bg-slate-400",
         Icon: AlertCircle,
     },
     ERROR_KONEKSI: {
-        label: 'ERROR_KONEKSI',
-        cls: 'bg-rose-50 text-rose-700 border-rose-200',
-        dot: 'bg-rose-500',
+        label: "ERROR_KONEKSI",
+        cls: "bg-rose-50 text-rose-700 border-rose-200",
+        dot: "bg-rose-500",
         Icon: AlertCircle,
     },
 };
@@ -193,16 +225,16 @@ const bsreStatusMap: Record<string, StatusMeta> = {
 const getStatusMeta = (status?: string | null): StatusMeta => {
     if (!status)
         return {
-            label: 'Belum Dicek',
-            cls: 'bg-slate-50 text-slate-600 border-slate-200',
-            dot: 'bg-slate-400',
+            label: "Belum Dicek",
+            cls: "bg-slate-50 text-slate-600 border-slate-200",
+            dot: "bg-slate-400",
             Icon: Clock4,
         };
     return (
         bsreStatusMap[status] || {
             label: status,
-            cls: 'bg-slate-50 text-slate-700 border-slate-200',
-            dot: 'bg-slate-400',
+            cls: "bg-slate-50 text-slate-700 border-slate-200",
+            dot: "bg-slate-400",
             Icon: AlertCircle,
         }
     );
@@ -213,7 +245,6 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
 
 <template>
     <Head title="Manajemen Pegawai" />
-
     <AuthenticatedLayout>
         <template #header>
             <div>
@@ -228,7 +259,8 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                     Manajemen Akun Pegawai
                 </h2>
                 <p class="mt-0.5 text-xs text-[#6A8593]">
-                    Kelola akses, peran, dan status sertifikat TTE pegawai rumah sakit.
+                    Kelola akses, peran, dan status sertifikat TTE pegawai rumah
+                    sakit.
                 </p>
             </div>
         </template>
@@ -252,7 +284,6 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                             class="w-full rounded-xl border border-[#D9E6E3] bg-[#F8FCFB] py-2.5 pl-9 pr-3 text-sm text-[#0F2A2E] placeholder:text-[#A8BCC2] transition-colors focus:border-[#0B8570] focus:outline-none focus:ring-0"
                         />
                     </div>
-
                     <div class="relative lg:w-52">
                         <UserCheck
                             class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
@@ -269,7 +300,6 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                             class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
                         />
                     </div>
-
                     <div class="relative lg:w-56">
                         <Filter
                             class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6A8593]"
@@ -283,9 +313,15 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                             <option value="RENEW">RENEW</option>
                             <option value="NEW">NEW</option>
                             <option value="EXPIRED">EXPIRED</option>
-                            <option value="NOT_REGISTERED">NOT_REGISTERED</option>
-                            <option value="WAITING_FOR_VERIFICATION">WAITING_FOR_VERIFICATION</option>
-                            <option value="NO_CERTIFICATE">NO_CERTIFICATE</option>
+                            <option value="NOT_REGISTERED">
+                                NOT_REGISTERED
+                            </option>
+                            <option value="WAITING_FOR_VERIFICATION">
+                                WAITING_FOR_VERIFICATION
+                            </option>
+                            <option value="NO_CERTIFICATE">
+                                NO_CERTIFICATE
+                            </option>
                             <option value="SUSPEND">SUSPEND</option>
                             <option value="REVOKE">REVOKE</option>
                         </select>
@@ -403,6 +439,14 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                                             >
                                                 {{ user.email }}
                                             </p>
+                                            <p
+                                                class="mt-0.5 truncate text-[11px] text-[#6A8593]"
+                                                :title="user.department?.name"
+                                            >
+                                                {{
+                                                    user.department?.name || "—"
+                                                }}
+                                            </p>
                                         </div>
                                     </div>
                                 </td>
@@ -411,11 +455,13 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                                 <td
                                     class="whitespace-nowrap px-6 py-4 align-top font-mono text-xs text-[#4A6572]"
                                 >
-                                    {{ user.nik || '—' }}
+                                    {{ user.nik || "—" }}
                                 </td>
 
                                 <!-- Peran -->
-                                <td class="whitespace-nowrap px-6 py-4 align-top">
+                                <td
+                                    class="whitespace-nowrap px-6 py-4 align-top"
+                                >
                                     <span
                                         v-if="user.role === 'admin'"
                                         class="inline-flex items-center gap-1 rounded-full border border-[#BCE5DA] bg-[#EAF7F3] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0B7563]"
@@ -433,7 +479,9 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                                 </td>
 
                                 <!-- Status Akses -->
-                                <td class="whitespace-nowrap px-6 py-4 align-top">
+                                <td
+                                    class="whitespace-nowrap px-6 py-4 align-top"
+                                >
                                     <span
                                         v-if="user.is_active"
                                         class="inline-flex items-center gap-1.5 rounded-full border border-[#BCE5DA] bg-[#EAF7F3] px-2.5 py-1 text-[11px] font-semibold text-[#0B7563]"
@@ -462,24 +510,25 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                                 </td>
 
                                 <!-- Status TTE -->
-                                <td class="whitespace-nowrap px-6 py-4 align-top">
+                                <td
+                                    class="whitespace-nowrap px-6 py-4 align-top"
+                                >
                                     <div class="flex items-center gap-2">
-                                        <!-- Spinner -->
                                         <span
                                             v-if="isChecking[user.id]"
                                             class="inline-flex items-center gap-1.5 rounded-full border border-[#E9F0EE] bg-[#F8FCFB] px-2.5 py-1 text-[11px] font-semibold text-[#6A8593]"
                                         >
-                                            <Loader2 class="h-3 w-3 animate-spin" />
+                                            <Loader2
+                                                class="h-3 w-3 animate-spin"
+                                            />
                                             Mengecek…
                                         </span>
-
-                                        <!-- Hasil -->
                                         <template v-else>
                                             <span
                                                 :class="
                                                     getStatusMeta(
                                                         userStatuses[user.id] ||
-                                                            user.bsre_status
+                                                            user.bsre_status,
                                                     ).cls
                                                 "
                                                 class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold"
@@ -490,19 +539,18 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                                                         getStatusMeta(
                                                             userStatuses[
                                                                 user.id
-                                                            ] || user.bsre_status
+                                                            ] ||
+                                                                user.bsre_status,
                                                         ).dot
                                                     "
                                                 />
                                                 {{
                                                     getStatusMeta(
                                                         userStatuses[user.id] ||
-                                                            user.bsre_status
+                                                            user.bsre_status,
                                                     ).label
                                                 }}
                                             </span>
-
-                                            <!-- Retry -->
                                             <button
                                                 v-if="
                                                     userStatuses[user.id] ===
@@ -512,7 +560,9 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                                                 @click="checkStatus(user.id)"
                                                 class="inline-flex items-center gap-1 rounded-lg border border-[#E9F0EE] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#6A8593] transition-colors hover:border-[#BCE5DA] hover:bg-[#F2FBF8] hover:text-[#0B7563]"
                                             >
-                                                <RefreshCw class="h-2.5 w-2.5" />
+                                                <RefreshCw
+                                                    class="h-2.5 w-2.5"
+                                                />
                                                 Coba Lagi
                                             </button>
                                         </template>
@@ -549,9 +599,17 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                                         <UserCheck v-else class="h-3.5 w-3.5" />
                                         {{
                                             user.is_active
-                                                ? 'Nonaktifkan'
-                                                : 'Setujui & Aktifkan'
+                                                ? "Nonaktifkan"
+                                                : "Setujui & Aktifkan"
                                         }}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="openEditModal(user)"
+                                        class="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-[#D9E6E3] bg-white px-3 py-1.5 text-xs font-semibold text-[#4A6572] transition-colors hover:bg-[#F2FBF8] hover:text-[#0B7563]"
+                                    >
+                                        <Building class="h-3.5 w-3.5" />
+                                        Edit
                                     </button>
                                 </td>
                             </tr>
@@ -590,5 +648,12 @@ const currentUserId = computed(() => (page.props.auth as any)?.user?.id);
                 </div>
             </div>
         </div>
+
+        <UserEditModal
+            :show="showEditModal"
+            :user="userToEdit"
+            :departments="departments"
+            @close="showEditModal = false"
+        />
     </AuthenticatedLayout>
 </template>

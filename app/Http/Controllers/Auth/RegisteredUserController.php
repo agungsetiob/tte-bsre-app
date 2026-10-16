@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Department;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,11 @@ class RegisteredUserController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('Auth/Register');
+        $departments = Department::where('is_active', true)->orderBy('name', 'asc')->get();
+        
+        return Inertia::render('Auth/Register', [
+            'departments' => $departments
+        ]);
     }
 
     /**
@@ -35,18 +40,20 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'nik' => 'required|string|max:16|unique:'.User::class, 
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'department_id' => 'required|exists:departments,id',
         ]);
 
-        $isFirstUser = \App\Models\User::count() === 0;
+        $isFirstUser = User::count() === 0;
 
-        $user = \App\Models\User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'nik' => $request->nik,
             'password' => Hash::make($request->password),
             'role' => $isFirstUser ? 'admin' : 'user',
             'is_active' => $isFirstUser ? true : false,
+            'department_id' => $request->department_id,
         ]);
 
         event(new Registered($user));

@@ -3,9 +3,14 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\LetterNumberController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicVerificationController;
 use App\Http\Controllers\TteController;
+use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\ClassificationController;
+use App\Http\Controllers\Admin\LetterMonitorController;
+use App\Http\Controllers\Admin\LetterTypeController;
 use App\Http\Controllers\TteHistoryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -67,12 +72,27 @@ Route::middleware(['auth', 'verified', 'active'])->group(function () {
     // Histori TTE
     Route::get('/histories', [TteHistoryController::class, 'index'])->name('histories.index');
     Route::delete('/histories/{history}', [TteHistoryController::class, 'destroy'])->name('histories.destroy');
+
+    Route::get('/letter-numbers', [LetterNumberController::class, 'index'])->name('letter-numbers.index');
+    Route::post('/letter-numbers', [LetterNumberController::class, 'store'])->name('letter-numbers.store');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::get('/admin/users', [AdminController::class, 'index'])->name('admin.users.index');
     Route::patch('/admin/users/{user}/toggle', [AdminController::class, 'toggleActive'])->name('admin.users.toggle');
-    Route::post('/users/{user}/check-bsre', [AdminController::class, 'checkBsreStatus'])->name('users.check_bsre');
+    Route::post('/admin/users/{user}/check-bsre', [AdminController::class, 'checkBsreStatus'])->name('admin.users.check_bsre');
+    Route::put('/admin/users/{user}', [AdminController::class, 'update'])->name('admin.users.update');
+
+    Route::patch('departments/{department}/toggle', [DepartmentController::class, 'toggleActive'])->name('admin.departments.toggle');
+    Route::patch('classifications/{classification}/toggle', [ClassificationController::class, 'toggleActive'])->name('admin.classifications.toggle');
+    Route::patch('letter-types/{letter_type}/toggle', [LetterTypeController::class, 'toggleActive'])->name('admin.letter-types.toggle');
+
+    Route::apiResource('/admin/departments', DepartmentController::class)->except(['show'])->names('admin.departments');
+    Route::apiResource('/admin/classifications', ClassificationController::class)->except(['show'])->names('admin.classifications');
+    Route::apiResource('/admin/letter-types', LetterTypeController::class)->except(['show'])->names('admin.letter-types');
+
+    Route::get('letter-monitor/export', [LetterMonitorController::class, 'export'])->name('admin.letter_monitor.export');
+    Route::get('letter-monitor', [LetterMonitorController::class, 'index'])->name('admin.letter_monitor.index');
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])

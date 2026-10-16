@@ -428,40 +428,39 @@ const statusMeta = (s: string) =>
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Pagination -->
-            <div
-                v-if="
-                    incomingRequests.links && incomingRequests.links.length > 3
-                "
-                class="flex justify-center pt-2"
-            >
+                <!-- Pagination -->
                 <div
-                    class="inline-flex items-center gap-1 rounded-xl border border-[#DCE8E5] bg-white p-1 shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)]"
+                    v-if="
+                        incomingRequests.links && incomingRequests.links.length > 3
+                    "
+                    class="px-6 py-4 border-t border-[#EEF4F2] bg-[#F8FCFB] justify-center flex"
                 >
-                    <template
-                        v-for="(link, k) in incomingRequests.links"
-                        :key="k"
+                    <div
+                        class="inline-flex items-center gap-1 rounded-xl border border-[#DCE8E5] bg-white p-1"
                     >
-                        <div
-                            v-if="link.url === null"
-                            class="cursor-not-allowed rounded-lg px-3 py-1.5 text-xs font-semibold text-[#A8BCC2]"
-                            v-html="link.label"
-                        />
-                        <Link
-                            v-else
-                            :href="link.url"
-                            preserve-scroll
-                            :class="
-                                link.active
-                                    ? 'bg-[#0B8570] text-white'
-                                    : 'text-[#4A6572] hover:bg-[#F2FBF8] hover:text-[#0B7563]'
-                            "
-                            class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
-                            v-html="link.label"
-                        />
-                    </template>
+                        <template
+                            v-for="(link, k) in incomingRequests.links"
+                            :key="k"
+                        >
+                            <div
+                                v-if="link.url === null"
+                                class="cursor-not-allowed rounded-lg px-3 py-1.5 text-xs font-semibold text-[#A8BCC2]"
+                                v-html="link.label"
+                            />
+                            <Link
+                                v-else
+                                :href="link.url"
+                                preserve-scroll
+                                :class="
+                                    link.active
+                                        ? 'bg-[#0B8570] text-white'
+                                        : 'text-[#4A6572] hover:bg-[#F2FBF8] hover:text-[#0B7563]'
+                                "
+                                class="rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors"
+                                v-html="link.label"
+                            />
+                        </template>
+                    </div>
                 </div>
             </div>
         </div>
