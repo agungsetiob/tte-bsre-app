@@ -147,9 +147,9 @@ const isValid = computed(
                 />
                 <a
                     href="/"
-                    class="inline-flex items-center gap-1.5 rounded-lg border border-[#E9F0EE] bg-white/80 px-3 py-1.5 text-xs font-semibold text-[#4A6572] backdrop-blur transition-colors hover:border-[#BCE5DA] hover:bg-[#F2FBF8] hover:text-[#0B7563]"
+                    class="inline-flex items-center gap-1.5 rounded-lg bg-white/80 px-3 py-1.5 text-sm font-semibold text-[#4A6572] backdrop-blur transition-colors hover:border-[#BCE5DA] hover:bg-[#F2FBF8] hover:text-[#0B7563]"
                 >
-                    <ArrowLeft class="h-3.5 w-3.5" />
+                    <ArrowLeft class="h-4 w-4" />
                     Beranda
                 </a>
             </div>
@@ -302,18 +302,10 @@ const isValid = computed(
                                     </div>
 
                                     <span
-                                        v-if="isValid"
                                         class="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#BCE5DA] bg-[#EAF7F3] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#0B7563]"
                                     >
                                         <BadgeCheck class="h-3 w-3" />
-                                        Valid
-                                    </span>
-                                    <span
-                                        v-else
-                                        class="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-700"
-                                    >
-                                        <ShieldX class="h-3 w-3" />
-                                        Invalid
+                                        {{ verificationResult.conclusion }}
                                     </span>
                                 </div>
 
@@ -418,13 +410,12 @@ const isValid = computed(
                             />
                             <div>
                                 <p class="text-sm font-bold text-amber-800">
-                                    Belum Ada Tanda Tangan Elektronik
+                                    {{ verificationResult.conclusion }}
                                 </p>
                                 <p
                                     class="mt-0.5 text-xs leading-relaxed text-amber-700"
                                 >
-                                    Dokumen ini belum ditandatangani secara
-                                    elektronik.
+                                    {{  verificationResult.description }}
                                 </p>
                             </div>
                         </div>
@@ -475,8 +466,6 @@ const isValid = computed(
             <p class="mt-6 text-center text-[11px] text-[#A8BCC2]">
                 &copy; {{ new Date().getFullYear() }} RSUD dr. H. Andi
                 Abdurrahman Noor
-                <span class="mx-1">•</span>
-                Halaman verifikasi publik
             </p>
 
             <!-- ============ VERIFY ANOTHER ============ -->

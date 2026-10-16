@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm, usePage, Link } from "@inertiajs/vue3";
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
     ArrowLeft,
     ArrowRight,
@@ -10,7 +10,6 @@ import {
     FileText,
     Info,
     Loader,
-    RotateCcw,
     ShieldCheck,
     Upload,
     X,
@@ -105,26 +104,6 @@ onMounted(() => {
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
 });
-
-const fileInput = ref<HTMLInputElement | null>(null);
-
-function clearFileInput() {
-    if (fileInput.value) fileInput.value.value = "";
-}
-
-/** Tombol "Reset Pilihan Berkas" */
-function resetFileSelection() {
-    form.reset();
-    form.clearErrors();
-    clearFileInput();
-}
-
-/** Tombol "Verifikasi Dokumen Lain" */
-function verifyAnotherDocument() {
-    resetFileSelection();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    nextTick(() => fileInput.value?.click());
-}
 </script>
 
 <template>
@@ -155,18 +134,10 @@ function verifyAnotherDocument() {
                 <nav class="flex items-center gap-2">
                     <Link
                         :href="route('welcome')"
-                        class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-[#46626F] transition-colors hover:text-[#0B8570]"
+                        class="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-[#46626F] transition-colors hover:border-[#BCE5DA] hover:bg-[#F2FBF8] hover:text-[#0B7563]"
                     >
                         <ArrowLeft class="h-4 w-4" />
                         <span class="hidden sm:inline">Beranda</span>
-                    </Link>
-
-                    <Link
-                        :href="route('login')"
-                        class="group inline-flex items-center gap-1.5 rounded-lg bg-[#0B8570] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#086B5B] hover:shadow-[0_0_0_3px_rgba(11,133,112,.22)]"
-                    >
-                        <ShieldCheck class="h-4 w-4" />
-                        <span class="hidden sm:inline">Login Sistem</span>
                     </Link>
                 </nav>
             </div>
@@ -228,11 +199,11 @@ function verifyAnotherDocument() {
                         <h1
                             class="font-display text-2xl font-bold tracking-tight text-[#0F2A2E] sm:text-3xl"
                         >
-                            Verifikasi Keaslian Dokumen TTE
+                            Verifikasi Dokumen TTE
                         </h1>
                         <p class="mt-1 text-sm text-[#4A6572]">
-                            Unggah dokumen PDF ber-TTE untuk memeriksa keabsahan
-                            tanda tangan secara instan.
+                            Unggah dokumen PDF untuk memeriksa keabsahan
+                            tanda tangan elektronik.
                         </p>
                     </div>
 
@@ -251,7 +222,7 @@ function verifyAnotherDocument() {
                     class="grid gap-5 pt-6 lg:grid-cols-[minmax(0,1fr)_290px] lg:gap-7"
                 >
                     <label
-                        class="drop-zone relative block cursor-pointer rounded-[22px] border-2 border-dashed border-[#C7D9D5] bg-[#FBFEFD] p-5 text-center transition-colors sm:p-7"
+                        class="drop-zone relative flex min-h-[360px] cursor-pointer flex-col items-center justify-center rounded-[22px] border-2 border-dashed border-[#C7D9D5] bg-[#FBFEFD] p-8 text-center transition-colors"
                         :class="
                             dragOver
                                 ? 'border-[#0B8570]/60 bg-[#F0FBF8]'
@@ -262,7 +233,6 @@ function verifyAnotherDocument() {
                         @drop.prevent="handleDrop($event)"
                     >
                         <input
-                            ref="fileInput"
                             type="file"
                             accept="application/pdf,.pdf"
                             class="sr-only"
@@ -275,14 +245,10 @@ function verifyAnotherDocument() {
                             "
                         />
 
-                        <Upload class="mx-auto h-8 w-8 text-[#0B8570]" />
+                        <Upload class="mx-auto h-12 w-12 text-[#0B8570]"/>
 
                         <p class="mt-3 font-semibold text-[#0F2A2E]">
-                            Letakkan berkas PDF di sini atau klik untuk memilih
-                        </p>
-                        <p class="mt-1 text-sm text-[#6A8593]">
-                            Format PDF dengan sertifikat elektronik BSrE
-                            disarankan agar hasil baca lebih akurat.
+                            Seret berkas PDF kesini atau klik untuk memilih
                         </p>
 
                         <span
@@ -341,7 +307,7 @@ function verifyAnotherDocument() {
                                 />
                                 {{
                                     isProcessing
-                                        ? "Memeriksa ke Server BSrE..."
+                                        ? "Memverifikasi..."
                                         : "Verifikasi Dokumen"
                                 }}
                                 <ArrowRight
@@ -350,31 +316,9 @@ function verifyAnotherDocument() {
                                 />
                             </button>
 
-                            <button
-                                v-else
-                                type="button"
-                                @click="verifyAnotherDocument"
-                                class="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0B8570] px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-[#086B5B]"
-                            >
-                                <Upload
-                                    class="h-4 w-4 transition-transform group-hover:-translate-y-0.5"
-                                />
-                                Verifikasi Dokumen Lain
-                            </button>
-
-                            <button
-                                v-if="hasFile"
-                                type="button"
-                                class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#B9D3CD] px-4 py-2.5 text-sm font-medium text-[#46626F] transition-colors hover:border-[#0B8570]/60 hover:bg-[#F2FBF8]"
-                                @click="resetFileSelection"
-                            >
-                                <RotateCcw class="h-4 w-4" />
-                                Reset Pilihan Berkas
-                            </button>
-
                             <p
                                 v-if="!hasFile && !isProcessing"
-                                class="text-xs leading-relaxed text-[#6A8593]"
+                                class="text-xs leading-relaxed text-rose-700"
                             >
                                 Pilih berkas terlebih dahulu untuk memulai
                                 verifikasi.
@@ -403,7 +347,11 @@ function verifyAnotherDocument() {
                                         ? CircleCheck
                                         : CircleAlert
                                 "
-                                class="mt-1 h-8 w-8 shrink-0 text-[#0B8570]"
+                                class="mt-1 h-8 w-8 shrink-0"
+                                :class="{
+                                    'text-[#0B8570]': conclusionIsValid,
+                                    'text-[#92400E]': !conclusionIsValid,
+                                }"
                             />
                             <div class="min-w-0">
                                 <h2
@@ -473,11 +421,7 @@ function verifyAnotherDocument() {
                             <p
                                 class="mt-1 text-lg font-semibold text-[#0F2A2E]"
                             >
-                                {{
-                                    conclusionIsValid
-                                        ? "Baik (Valid)"
-                                        : "Perlu Pemeriksaan"
-                                }}
+                                {{ result?.conclusion || "-" }}
                             </p>
                         </div>
                     </div>
@@ -595,42 +539,22 @@ function verifyAnotherDocument() {
                         </article>
                     </div>
                 </div>
-
-                <div
-                    v-else
-                    class="rounded-[24px] border border-[#FDE68A] bg-[#FFFBEB] p-5 text-sm text-[#92400E]"
-                >
-                    <div class="flex items-start gap-3">
-                        <Info class="mt-0.5 h-5 w-5 shrink-0" />
-                        <p>
-                            Dokumen memiliki hasil verifikasi umum, tetapi tidak
-                            ada blok tanda tangan yang dapat ditampilkan pada
-                            layar ini.
-                        </p>
-                    </div>
-                </div>
             </section>
         </main>
 
         <footer class="mx-auto w-full max-w-[1180px] px-5 pb-10 md:px-8">
             <div
-                class="reveal flex flex-col gap-6 border-t border-[#D9E6E3] pt-8 md:flex-row md:items-center md:justify-between"
+                class="reveal flex flex-row justify-center gap-6 border-t border-[#D9E6E3] pt-6 items-center"
             >
                 <div class="flex items-center gap-4">
                     <img
                         src="/bsre-logo.png"
                         alt="Balai Sertifikasi Elektronik (BSrE) — BSSN"
-                        class="h-14 w-auto md:h-16"
+                        class="h-12 w-auto md:h-14"
                     />
-                    <p class="max-w-md text-xs leading-relaxed text-[#4A6572]">
-                        Layanan ini beroperasi terintegrasi dengan
-                        <span class="font-semibold text-[#0F2A2E]"
-                            >Balai Sertifikasi Elektronik (BSrE)</span
-                        >, Badan Siber dan Sandi Negara, sebagai penerbit
-                        sertifikat elektronik bagi instansi pemerintah.
-                    </p>
                 </div>
-
+            </div>
+            <div class="reveal flex flex-row pt-6 items-center justify-center">
                 <p class="text-xs text-[#6A8593] md:text-right">
                     &copy; 2026 RSUD dr. H. Andi Abdurrahman Noor
                 </p>
