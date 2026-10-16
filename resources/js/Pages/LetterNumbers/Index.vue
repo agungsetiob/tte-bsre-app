@@ -141,7 +141,7 @@ const copyToClipboard = (text: string, id: number) => {
                     <div class="rounded-2xl border border-[#DCE8E5] bg-white shadow-[0_18px_40px_-32px_rgba(15,42,46,.35)] overflow-hidden">
                         <div class="px-6 py-4 border-b border-[#EEF4F2] flex items-center gap-2 bg-[#F8FCFB]">
                             <ClipboardList class="h-5 w-5 text-[#6A8593]" />
-                            <h3 class="font-display text-sm font-bold text-[#0F2A2E]">Riwayat Pengambilan Nomor Saya</h3>
+                            <h3 class="font-display text-sm font-bold text-[#0F2A2E]">Riwayat Nomor Surat</h3>
                         </div>
 
                         <div class="overflow-x-auto">
